@@ -858,7 +858,6 @@ export const optimistic: OptimisticMutationConfig = {
 		// Chairs supply the proposer via args; delegates resolve from the cached
 		// conferenceUser row (same logic as findSelfConferenceUser).
 		let proposerCommitteeMemberId = (args.proposerCommitteeMemberId as string | undefined) ?? null;
-		const seconderCommitteeMemberId = (args.seconderCommitteeMemberId as string | undefined) ?? null;
 		if (!proposerCommitteeMemberId) {
 			const paperId = args.paperId as string;
 			const committeeId = cache.resolve(
@@ -981,7 +980,6 @@ export const optimistic: OptimisticMutationConfig = {
 			paperId: args.paperId as string,
 			paper: { __typename: 'Resolutionpaper', id: args.paperId as string },
 			proposerCommitteeMemberId,
-			seconderCommitteeMemberId,
 			proposer: proposerCommitteeMemberId
 				? { __typename: 'Committeemember', id: proposerCommitteeMemberId }
 				: null,
@@ -1729,12 +1727,6 @@ export const optimistic: OptimisticMutationConfig = {
 		};
 	},
 	removeAmendmentSponsor: () => true,
-		updateAmendment: (args) => ({
-			__typename: 'Amendment',
-			id: args.id,
-			proposerCommitteeMemberId: (args.proposerCommitteeMemberId as string | undefined) ?? undefined,
-			seconderCommitteeMemberId: (args.seconderCommitteeMemberId as string | undefined) ?? undefined
-		}),
 	updateAmendmentReviewItem: () => true,
 	createManualSnapshot: (args) => {
 		const id = ensureId(args.id);
@@ -2669,8 +2661,6 @@ export const updates: UpdatesConfig = {
 						newContent
 						targetPosition
 						paperId
-						proposerCommitteeMemberId
-						seconderCommitteeMemberId
 					}
 				`,
 				{
@@ -2682,9 +2672,7 @@ export const updates: UpdatesConfig = {
 					targetOperativeIndex: (args.targetOperativeIndex as number | undefined) ?? null,
 					newContent: (args.newContent as string | undefined) ?? null,
 					targetPosition: (args.targetPosition as number | undefined) ?? null,
-					paperId: args.paperId as string,
-					proposerCommitteeMemberId,
-					seconderCommitteeMemberId
+					paperId: args.paperId as string
 				} as Record<string, unknown>
 			);
 

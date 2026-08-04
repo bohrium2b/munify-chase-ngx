@@ -13,7 +13,6 @@
 	} from './paperContext';
 	import { getTranslatedCountryNameFromAlpha3Code } from '$lib/utils/nationTranslationHelper.svelte';
 	import Flag from '$lib/components/Flag.svelte';
-	import Combobox from '$lib/components/Combobox.svelte';
 	import { openVotingModal, type VotingResult } from '$lib/components/voting/votingModal';
 	import AmendmentSponsorPanel from './AmendmentSponsorPanel.svelte';
 	import AmendmentReviewPanel from './AmendmentReviewPanel.svelte';
@@ -21,7 +20,6 @@
 	import AiIcon from '$lib/components/AiIcon.svelte';
 	import { slide } from 'svelte/transition';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
-import Fuse, { type IFuseOptions } from 'fuse.js';
 	import { rankAmendmentsByImpact } from '$lib/ai/amendments';
 	import { getAiPreference, preferenceToMode } from '$lib/ai/aiPreference.svelte';
 
@@ -162,30 +160,8 @@ import Fuse, { type IFuseOptions } from 'fuse.js';
 			id: true,
 			representation: { name: true, alpha2Code: true, alpha3Code: true, faIcon: true, type: true }
 		},
-		seconder: {
-			id: true,
-			representation: { name: true, alpha2Code: true, alpha3Code: true, faIcon: true, type: true }
-		},
 		sponsors: { id: true, amendmentId: true, committeeMember: { id: true } }
 	});
-
-	const committeeMembers = await client.liveQuery.committeeMembers({
-		__args: { where: { committee: { id: committeeId } } },
-		id: true,
-		representation: { name: true, alpha2Code: true, alpha3Code: true, faIcon: true, type: true }
-	});
-
-	function getMemberName(member: (typeof committeeMembers)[number] | undefined) {
-		return (
-			getTranslatedCountryNameFromAlpha3Code(member?.representation?.alpha3Code) ??
-			member?.representation?.name ??
-			''
-		);
-	}
-
-	const sortedCommitteeMembers = $derived(
-		[...(committeeMembers ?? [])].sort((a, b) => getMemberName(a).localeCompare(getMemberName(b)))
-	);
 
 	// Clause-targeted amendments when a clause is selected; ADD amendments
 	// (which target a position, not a clause) surface at the document level.
@@ -278,45 +254,6 @@ import Fuse, { type IFuseOptions } from 'fuse.js';
 	}
 
 	let busyId = $state<string | null>(null);
-	let rolesOpen = $state(false);
-	let rolesAmendmentId = $state<string | null>(null);
-	let rolesProposerId = $state('');
-	let rolesSeconderId = $state('');
-
-	function openRoles(a: AmendmentRow) {
-		rolesAmendmentId = a.id;
-		rolesProposerId = a.proposer?.id ?? '';
-		rolesSeconderId = a.seconder?.id ?? '';
-		rolesOpen = true;
-	}
-
-	$effect(() => {
-		if (rolesProposerId && rolesSeconderId === rolesProposerId) {
-			rolesSeconderId = '';
-		}
-	});
-
-	async function saveRoles() {
-		if (!rolesAmendmentId || !rolesProposerId) return;
-		busyId = rolesAmendmentId;
-		try {
-			await (client.mutate as any).updateAmendment({
-				__args: {
-					id: rolesAmendmentId,
-					proposerCommitteeMemberId: rolesProposerId,
-					seconderCommitteeMemberId: rolesSeconderId || undefined
-				},
-				id: true,
-				proposerCommitteeMemberId: true,
-				seconderCommitteeMemberId: true
-			});
-			rolesOpen = false;
-		} catch (err) {
-			toast.error(err instanceof Error ? err.message : 'Failed to save amendment roles');
-		} finally {
-			busyId = null;
-		}
-	}
 
 	async function run(id: string, fn: () => Promise<unknown>, successMsg?: string) {
 		busyId = id;
@@ -557,16 +494,6 @@ import Fuse, { type IFuseOptions } from 'fuse.js';
 						<span class="badge badge-sm {amendmentStatusBadgeClass(a.status as AmendmentStatus)}">
 							{amendmentStatusLabel(a.status as AmendmentStatus)}
 						</span>
-						{#if team}
-							<button
-								class="btn btn-ghost btn-xs btn-circle"
-								aria-label="Edit amendment roles"
-								title="Edit amendment roles"
-								onclick={() => openRoles(a)}
-							>
-								<i class="fas fa-pen"></i>
-							</button>
-						{/if}
 					</div>
 					<div class="text-base-content/70 mt-2 flex items-center gap-2 text-xs">
 						<Flag representation={a.proposer?.representation} size="xs" />
@@ -783,38 +710,6 @@ import Fuse, { type IFuseOptions } from 'fuse.js';
 			</div>
 		</div>
 		<button class="modal-backdrop" aria-label={m.cancel()} onclick={cancelVoteOutcome}></button>
-	</div>
-{/if}
-
-{#if rolesOpen}
-	<div class="modal modal-open">
-		<div class="modal-box bg-base-100 flex flex-col gap-4">
-			<h3 class="text-lg font-bold">Edit amendment roles</h3>
-			<div class="flex flex-col gap-1">
-				<span class="label-text text-sm font-medium">{m.selectProposerDelegation()}</span>
-				<select class="select select-bordered w-full" bind:value={rolesProposerId}>
-					{#each sortedCommitteeMembers as member (member.id)}
-						<option value={member.id}>{getMemberName(member)}</option>
-					{/each}
-				</select>
-			</div>
-			<div class="flex flex-col gap-1">
-				<span class="label-text text-sm font-medium">Seconder</span>
-				<select class="select select-bordered w-full" bind:value={rolesSeconderId}>
-					<option value="">No seconder</option>
-					{#each sortedCommitteeMembers.filter((member) => member.id !== rolesProposerId) as member (member.id)}
-						<option value={member.id}>{getMemberName(member)}</option>
-					{/each}
-				</select>
-			</div>
-			<div class="modal-action">
-				<button class="btn btn-ghost" onclick={() => (rolesOpen = false)}>{m.cancel()}</button>
-				<button class="btn btn-primary" disabled={!rolesProposerId || busyId === rolesAmendmentId} onclick={saveRoles}>
-					Save
-				</button>
-			</div>
-		</div>
-		<button class="modal-backdrop" aria-label={m.cancel()} onclick={() => (rolesOpen = false)}></button>
 	</div>
 {/if}
 

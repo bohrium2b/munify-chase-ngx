@@ -508,7 +508,6 @@ export const amendment = snakeCase.table('amendment', {
 	proposerCommitteeMemberId: text()
 		.notNull()
 		.references(() => committeeMember.id, { onDelete: 'cascade' }),
-	seconderCommitteeMemberId: text().references(() => committeeMember.id, { onDelete: 'set null' }),
 	type: amendmentType().notNull(),
 	status: amendmentStatus().notNull().default('PENDING'),
 	// Y.Doc clause id this amendment targets. Stored as plain text — not a FK.
