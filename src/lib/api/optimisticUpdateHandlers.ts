@@ -774,6 +774,7 @@ export const optimistic: OptimisticMutationConfig = {
 			creatorCommitteeMember: args.creatorCommitteeMemberId
 				? { __typename: 'Committeemember', id: args.creatorCommitteeMemberId as string }
 				: null,
+				seconderCommitteeMemberId: (args.seconderCommitteeMemberId as string | undefined) ?? null,
 			status: (args.status as string | undefined) ?? 'WORKING_PAPER',
 			title: (args.title as string | undefined) ?? null,
 			documentNumber: null,
@@ -796,6 +797,8 @@ export const optimistic: OptimisticMutationConfig = {
 			id: args.id
 		};
 		if (args.title != null) result.title = args.title;
+			if (args.creatorCommitteeMemberId != null) result.creatorCommitteeMemberId = args.creatorCommitteeMemberId;
+			if (args.seconderCommitteeMemberId != null) result.seconderCommitteeMemberId = args.seconderCommitteeMemberId;
 		if (args.status != null) result.status = args.status;
 		if (args.documentNumber != null) result.documentNumber = args.documentNumber;
 		return result;
