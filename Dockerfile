@@ -25,7 +25,7 @@ COPY . .
 RUN bun run build
 
 FROM ubuntu:22.04 AS typst
-RUN apt-get update && apt-get install wget tar 
+RUN apt-get update && apt-get install -y wget tar 
 WORKDIR /tmp
 
 RUN wget https://github.com/typst/typst/releases/download/v0.15.1/typst-x86_64-unknown-linux-musl.tar.xz
