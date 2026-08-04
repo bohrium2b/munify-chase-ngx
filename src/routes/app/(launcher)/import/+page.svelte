@@ -51,7 +51,7 @@
 			case 'Western European and Others Group':
 				return 'WESTERN_EUROPE_OTHERS';
 			default:
-				return undefined;
+				return 'WESTERN_EUROPE_OTHERS';
 		}
 	}
 
