@@ -30,7 +30,7 @@ WORKDIR /tmp
 
 RUN wget https://github.com/typst/typst/releases/download/v0.15.1/typst-x86_64-unknown-linux-musl.tar.xz -O typst-x86_64-unknown-linux-musl.tar.xz && \
     tar -xf typst-x86_64-unknown-linux-musl.tar.xz && \ 
-    mv typst /usr/local/bin/
+    mv typst-x86_64-unknown-linux-musl/typst /usr/local/bin/
 
 FROM node:lts-slim AS release
 WORKDIR /app/release
