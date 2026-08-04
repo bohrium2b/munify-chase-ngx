@@ -244,7 +244,7 @@
 		{#if layout.agendaItem}
 			{@const gridProps = layout.agendaItem}
 			<GridItem {...gridProps} class="card bg-base-100 gap-2 overflow-hidden p-4" id="agenda-item">
-				<IconInfoBox text={activeAgendaItem?.title || '—'} faIcon="podium" fullHeight />
+				<IconInfoBox text={activeAgendaItem?.title || '—'} faIcon="microphone" fullHeight />
 			</GridItem>
 		{/if}
 		{#if layout.majorities}

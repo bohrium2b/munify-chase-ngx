@@ -61,7 +61,7 @@ export function buildConferenceNavItems({
 
 		items.push({
 			key: 'mission-control',
-			faIcon: 'fa-rocket-launch',
+			faIcon: 'fa-rocket',
 			title: m.missionControl(),
 			href: `/app/${conferenceId}/mission-control`,
 			active: onMissionControl

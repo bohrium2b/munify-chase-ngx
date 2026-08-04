@@ -150,7 +150,7 @@
 			key: 'speakers-list'
 		},
 		{
-			icon: 'fa-comment-box',
+			icon: 'fa-comments',
 			label: () => m.voting(),
 			href: resolve('/app/[conferenceId]/[committeeId]/(chairs)/voting', {
 				conferenceId,

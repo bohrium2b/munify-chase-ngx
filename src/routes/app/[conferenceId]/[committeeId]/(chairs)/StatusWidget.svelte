@@ -16,7 +16,7 @@
 	let { committee }: Props = $props();
 </script>
 
-<IconInfoBox text={committee?.activeAgendaItem?.title || '—'} faIcon="podium" />
+<IconInfoBox text={committee?.activeAgendaItem?.title || '—'} faIcon="microphone" />
 <IconInfoBox text={committee?.stateOfDebate || '—'} faIcon="diagram-next" />
 <IconInfoBox
 	text={(committee?.statusHeadline.length || 0) > 0
