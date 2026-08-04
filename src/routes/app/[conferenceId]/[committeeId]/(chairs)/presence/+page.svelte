@@ -168,7 +168,7 @@
 							</button>
 						{:else}
 							<button class="btn btn-primary btn-xl" onclick={() => (rollCallActive = true)}>
-								<i class="fas fa-user-magnifying-glass mr-2"></i>
+								<i class="fas fa-binoculars mr-2"></i>
 								{m.rollCall()}
 							</button>
 						{/if}

@@ -126,7 +126,7 @@
 							class="btn btn-primary btn-lg flex items-center gap-3"
 							onclick={openPresentation}
 						>
-							<i class="fas fa-projector"></i>
+							<i class="fas fa-display"></i>
 							{m.openPresentation()}
 							<Kbd hotkey="alt+P" class="text-base-content" />
 						</button>

@@ -62,7 +62,7 @@
 	{#if minAmendmentSponsors !== null}
 		{@render Card({
 			number: minAmendmentSponsors ?? 0,
-			faIcon: 'fa-file-plus',
+			faIcon: 'fa-file-circle-plus',
 			tooltip: m.paperSupportThresholdTooltip()
 		})}
 	{/if}

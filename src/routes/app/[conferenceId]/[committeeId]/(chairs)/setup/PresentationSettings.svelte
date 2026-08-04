@@ -93,7 +93,7 @@
 	<div class="divider"></div>
 	<div class="flex flex-col gap-4">
 		<div class="flex items-center gap-4">
-			<i class="fa-duotone fa-text-size text-2xl"></i>
+			<i class="fa-duotone fa-font text-2xl"></i>
 			<input
 				type="range"
 				min="10"

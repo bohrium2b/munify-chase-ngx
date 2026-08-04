@@ -28,7 +28,7 @@
 		label: string;
 		faIcon: string;
 	}[] = [
-		{ id: 'SHOW_OF_HANDS', label: m.showOfHandsVoting(), faIcon: 'hand-wave' },
+		{ id: 'SHOW_OF_HANDS', label: m.showOfHandsVoting(), faIcon: 'thumbs-up' },
 		{ id: 'ROLL_CALL', label: m.rollCallVoting(), faIcon: 'list-check' },
 		{ id: 'DEVICE_BASED', label: m.deviceBasedVoting(), faIcon: 'mobile' }
 	];

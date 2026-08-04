@@ -141,7 +141,7 @@
 			key: 'presence'
 		},
 		{
-			icon: 'fa-podium',
+			icon: 'fa-users-line',
 			label: () => m.speakersList(),
 			href: resolve('/app/[conferenceId]/[committeeId]/(chairs)/speakers-list', {
 				conferenceId,
@@ -150,7 +150,7 @@
 			key: 'speakers-list'
 		},
 		{
-			icon: 'fa-box-ballot',
+			icon: 'fa-comment-box',
 			label: () => m.voting(),
 			href: resolve('/app/[conferenceId]/[committeeId]/(chairs)/voting', {
 				conferenceId,
