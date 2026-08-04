@@ -32,30 +32,6 @@
 		activeAgendaItem: { id: true, title: true }
 	});
 
-	const committeeMembers = await client.liveQuery.committeeMembers({
-		__args: { where: { committee: { id: committeeId } } },
-		id: true,
-		representation: {
-			name: true,
-			alpha2Code: true,
-			alpha3Code: true,
-			faIcon: true,
-			type: true
-		}
-	});
-
-	function getMemberName(member: (typeof committeeMembers)[number] | undefined) {
-		return (
-			getTranslatedCountryNameFromAlpha3Code(member?.representation?.alpha3Code) ??
-			member?.representation?.name ??
-			''
-		);
-	}
-
-	const sortedCommitteeMembers = $derived(
-		[...(committeeMembers ?? [])].sort((a, b) => getMemberName(a).localeCompare(getMemberName(b)))
-	);
-
 	let settingActiveId = $state<string | null>(null);
 	async function setActive(paperId: string) {
 		const unset = committee?.activeDraftResolutionId === paperId;
@@ -87,52 +63,33 @@
 				name: true,
 				type: true,
 				alpha2Code: true,
-				let createDialogOpen = $state(false);
-				let proposerCommitteeMemberId = $state('');
-				let seconderCommitteeMemberId = $state('');
-
-				function openCreateDialog() {
-					if (!sortedCommitteeMembers.length) {
-						toast.error(m.noCommitteeMembers());
-						return;
-					}
-					const firstMember = sortedCommitteeMembers[0]?.id ?? '';
-					proposerCommitteeMemberId = firstMember;
-					seconderCommitteeMemberId = '';
-					createDialogOpen = true;
-				}
-
-				$effect(() => {
-					if (proposerCommitteeMemberId && seconderCommitteeMemberId === proposerCommitteeMemberId) {
-						seconderCommitteeMemberId = '';
-					}
-				});
-
-				async function createPaper() {
+				alpha3Code: true,
 				faIcon: true
 			}
 		},
 		sponsors: { id: true },
-					if (!proposerCommitteeMemberId) {
-						toast.error(m.selectMember());
-						return;
-					}
 		agendaItem: { id: true, title: true }
 	});
+
+	const statusFilters: { key: PaperStatus | 'ALL'; label: () => string }[] = [
+		{ key: 'ALL', label: () => m.all() },
+		...PAPER_STATUS_ORDER.map((s) => ({ key: s, label: () => statusLabel(s) }))
+	];
+	let activeFilter = $state<PaperStatus | 'ALL'>('ALL');
+
+	const filteredPapers = $derived.by(() => {
 		const activeAgendaItemId = committee?.activeAgendaItem?.id;
-						const created = await client.mutate.createResolutionPaper({
+		const list = (papers ?? []).filter(
 			(p) => !activeAgendaItemId || p.agendaItem?.id === activeAgendaItemId
 		);
 		const filtered = activeFilter === 'ALL' ? list : list.filter((p) => p.status === activeFilter);
 		return [...filtered].sort((a, b) => (b.sponsors?.length ?? 0) - (a.sponsors?.length ?? 0));
-								creatorCommitteeMemberId: proposerCommitteeMemberId,
-								seconderCommitteeMemberId: seconderCommitteeMemberId || undefined,
+	});
 
-							} as any,
+	function paperHref(paperId: string) {
 		return resolve('/app/[conferenceId]/[committeeId]/(chairs)/resolutions/[paperId]', {
-						} as any);
+			conferenceId,
 			committeeId,
-						createDialogOpen = false;
 			paperId
 		});
 	}
@@ -198,10 +155,10 @@
 			<h1 class="text-3xl font-bold">{m.resolutions()}</h1>
 			<button
 				class="btn btn-primary"
-				disabled={creating || !committee?.activeAgendaItem || !sortedCommitteeMembers.length}
-				onclick={openCreateDialog}
+				disabled={creating || !committee?.activeAgendaItem}
+				onclick={createPaper}
 			>
-				<i class="fas fa-plus"></i>
+				{#if creating}<i class="fas fa-spinner fa-spin"></i>{:else}<i class="fas fa-plus"></i>{/if}
 				{m.createPaper()}
 			</button>
 		</header>
@@ -305,41 +262,4 @@
 			</div>
 		{/if}
 	</div>
-
-	{#if createDialogOpen}
-		<dialog class="modal" open>
-			<div class="modal-box bg-base-100 flex max-w-lg flex-col gap-4">
-				<h3 class="text-lg font-bold">{m.createPaper()}</h3>
-				<div class="flex flex-col gap-1">
-					<span class="label-text text-sm font-medium">{m.selectProposerDelegation()}</span>
-					<select class="select select-bordered w-full" bind:value={proposerCommitteeMemberId}>
-						{#each sortedCommitteeMembers as member (member.id)}
-							<option value={member.id}>{getMemberName(member)}</option>
-						{/each}
-					</select>
-				</div>
-				<div class="flex flex-col gap-1">
-					<span class="label-text text-sm font-medium">Seconder</span>
-					<select class="select select-bordered w-full" bind:value={seconderCommitteeMemberId}>
-						<option value="">No seconder</option>
-						{#each sortedCommitteeMembers.filter((member) => member.id !== proposerCommitteeMemberId) as member (member.id)}
-							<option value={member.id}>{getMemberName(member)}</option>
-						{/each}
-					</select>
-				</div>
-				<div class="modal-action">
-					<button class="btn btn-ghost" onclick={() => (createDialogOpen = false)}>
-						Cancel
-					</button>
-					<button class="btn btn-primary" disabled={creating} onclick={createPaper}>
-						{#if creating}<span class="loading loading-spinner loading-xs"></span>{/if}
-						{m.createPaper()}
-					</button>
-				</div>
-			</div>
-			<form method="dialog" class="modal-backdrop">
-				<button onclick={() => (createDialogOpen = false)}>close</button>
-			</form>
-		</dialog>
-	{/if}
 </div>
