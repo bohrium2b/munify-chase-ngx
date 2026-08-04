@@ -24,7 +24,7 @@ COPY . .
 # therefore we need to run the build command BEFORE we check for correctness
 RUN bun run build
 
-FROM ubuntu:22 AS typst
+FROM ubuntu:22.04 AS typst
 RUN apt-get update && apt-get install wget tar 
 WORKDIR /tmp
 
