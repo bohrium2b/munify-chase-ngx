@@ -77,6 +77,7 @@ schemaBuilder.mutationFields((t) => ({
 			// Chairs must specify the proposer; for committee-member callers this
 			// arg is ignored and the caller's own committeeMember is used.
 			proposerCommitteeMemberId: t.arg.id(),
+			seconderCommitteeMemberId: t.arg.id(),
 			// Only honored on the chair path. Committee members always create
 			// amendments in PENDING.
 			status: t.arg({ type: statusEnum }),
@@ -92,15 +93,34 @@ schemaBuilder.mutationFields((t) => ({
 					committee: isTeamInConference(ctx)
 				}
 			});
+			const paper = await db.query.resolutionPaper
+				.findFirst({ where: { id: args.paperId }, columns: { committeeId: true } })
+				.then(assertFindFirstExists);
 
 			let proposerCommitteeMemberId: string;
+			let seconderCommitteeMemberId: string | null = null;
 			let status: typeof schema.amendment.$inferSelect.status;
 
 			if (isChair) {
 				if (!args.proposerCommitteeMemberId) {
 					throw new GraphQLError('proposerCommitteeMemberId is required when creating as chair');
 				}
+				await db.query.committeeMember
+					.findFirst({
+						where: { id: args.proposerCommitteeMemberId, committeeId: paper.committeeId },
+						columns: { id: true }
+					})
+					.then(assertFindFirstExists);
 				proposerCommitteeMemberId = args.proposerCommitteeMemberId;
+				if (args.seconderCommitteeMemberId) {
+					await db.query.committeeMember
+						.findFirst({
+							where: { id: args.seconderCommitteeMemberId, committeeId: paper.committeeId },
+							columns: { id: true }
+						})
+						.then(assertFindFirstExists);
+					seconderCommitteeMemberId = args.seconderCommitteeMemberId;
+				}
 				status = args.status ?? 'SUBMITTED';
 			} else {
 				const cu = await db.query.conferenceUser
@@ -120,6 +140,7 @@ schemaBuilder.mutationFields((t) => ({
 					id: args.id,
 					paperId: args.paperId,
 					proposerCommitteeMemberId,
+					seconderCommitteeMemberId,
 					type: args.type,
 					status,
 					targetClauseId: args.targetClauseId ?? null,
@@ -135,6 +156,63 @@ schemaBuilder.mutationFields((t) => ({
 			});
 
 			pubsub.created();
+
+			return db.query.amendment
+				.findFirst(
+					query(
+						ctx.abilities.amendment.filter('read').merge({ where: { id: args.id } }).query.single
+					)
+				)
+				.then(assertFindFirstExists);
+		}
+	}),
+
+	updateAmendment: t.drizzleField({
+		type: ref,
+		args: {
+			id: t.arg.id({ required: true }),
+			proposerCommitteeMemberId: t.arg.id(),
+			seconderCommitteeMemberId: t.arg.id()
+		},
+		resolve: async (query, _root, args, ctx) => {
+			const amendment = await db.query.amendment
+				.findFirst({
+					where: { id: args.id },
+					with: { paper: { columns: { committeeId: true } } }
+				})
+				.then(assertFindFirstExists);
+
+			await db.query.resolutionPaper
+				.findFirst({
+					where: { id: amendment.paperId, committee: isTeamInConference(ctx) },
+					columns: { id: true }
+				})
+				.then(assertFindFirstExists);
+
+			const update: Partial<typeof schema.amendment.$inferInsert> = {};
+			if (args.proposerCommitteeMemberId != null) {
+				await db.query.committeeMember
+					.findFirst({
+						where: { id: args.proposerCommitteeMemberId, committeeId: amendment.paper.committeeId },
+						columns: { id: true }
+					})
+					.then(assertFindFirstExists);
+				update.proposerCommitteeMemberId = args.proposerCommitteeMemberId;
+			}
+			if (args.seconderCommitteeMemberId != null) {
+				await db.query.committeeMember
+					.findFirst({
+						where: { id: args.seconderCommitteeMemberId, committeeId: amendment.paper.committeeId },
+						columns: { id: true }
+					})
+					.then(assertFindFirstExists);
+				update.seconderCommitteeMemberId = args.seconderCommitteeMemberId;
+			}
+			if (Object.keys(update).length > 0) {
+				await db.update(schema.amendment).set(update).where(eq(schema.amendment.id, args.id));
+			}
+
+			pubsub.updated(args.id);
 
 			return db.query.amendment
 				.findFirst(

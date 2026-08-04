@@ -107,6 +107,16 @@
 	const selectedMember = $derived(
 		(members ?? []).find((mem) => getMemberName(mem) === proposerValue) ?? null
 	);
+	let seconderValue = $state('');
+	const selectedSeconder = $derived(
+		(members ?? []).find((mem) => getMemberName(mem) === seconderValue) ?? null
+	);
+
+	$effect(() => {
+		if (proposerValue && seconderValue === proposerValue) {
+			seconderValue = '';
+		}
+	});
 
 	let type = $state<AmendmentType>('ALTER_TEXT');
 	let newContent = $state('');
@@ -161,6 +171,9 @@
 			toast.error(m.selectProposerDelegation());
 			return;
 		}
+		if (team && !selectedSeconder && seconderValue) {
+			seconderValue = '';
+		}
 		if (needsTargetClause && !targetClauseId) {
 			toast.error(m.selectClauseFirst());
 			return;
@@ -184,13 +197,17 @@
 						: undefined,
 					newContent: needsContent ? newContent : undefined,
 					targetPosition: needsPosition ? (targetPosition ?? -1) : undefined,
-					proposerCommitteeMemberId: team ? (selectedMember?.id ?? undefined) : undefined
+					proposerCommitteeMemberId: team ? (selectedMember?.id ?? undefined) : undefined,
+					seconderCommitteeMemberId: team ? (selectedSeconder?.id ?? undefined) : undefined
 				},
-				id: true
-			});
+				id: true,
+				proposerCommitteeMemberId: true,
+				seconderCommitteeMemberId: true
+			} as any);
 			toast.success(m.amendmentCreated());
 			newContent = '';
 			proposerValue = '';
+			seconderValue = '';
 			close();
 		} catch (err) {
 			// Network errors mean the request was queued for offline sync — the
@@ -205,6 +222,7 @@
 				toast.success(m.amendmentCreated());
 				newContent = '';
 				proposerValue = '';
+				seconderValue = '';
 				close();
 			} else {
 				toast.error(err instanceof Error ? err.message : 'Failed to create amendment');
@@ -268,6 +286,42 @@
 							bind:value={proposerValue}
 							options={members ?? []}
 							filter={filterMembers}
+							getStringValue={getMemberName}
+							getKey={(mem) => mem.id}
+							placeholder={m.selectMember()}
+							triggerClass="input-lg join-item flex items-center justify-center px-3 text-base-content/40 hover:text-base-content transition-colors"
+						>
+							{#snippet ListItem(option)}
+								<Flag size="xs" representation={option.representation} />
+								<span class="ml-2 flex-1">{getMemberName(option)}</span>
+							{/snippet}
+						</Combobox>
+					{/if}
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<span class="label-text text-sm font-medium">Seconder</span>
+					{#if selectedSeconder}
+						<div class="bg-base-100 flex items-center gap-2 rounded-lg px-3 py-2">
+							<Flag representation={selectedSeconder.representation} size="xs" />
+							<span class="flex-1 text-sm font-medium">{getMemberName(selectedSeconder)}</span>
+							<button
+								class="btn btn-ghost btn-xs btn-circle"
+								aria-label={m.deselect()}
+								onclick={() => (seconderValue = '')}
+							>
+								<i class="fas fa-xmark text-xs"></i>
+							</button>
+						</div>
+					{:else}
+						<Combobox
+							bind:value={seconderValue}
+							options={members ?? []}
+							filter={(allMembers, search) =>
+								filterMembers(
+									(allMembers ?? []).filter((member) => member.id !== selectedMember?.id),
+									search
+								)}
 							getStringValue={getMemberName}
 							getKey={(mem) => mem.id}
 							placeholder={m.selectMember()}
