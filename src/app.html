@@ -29,7 +29,7 @@
 			const observer = new MutationObserver((mutations) => {
 				mutations.forEach(() => {
 					document.querySelectorAll('.fa-duotone').forEach(icon => {
-						icon.classList.replace('fa-duotone', '');
+						icon.classList.replace('fa-duotone', 'fa-solid');
 					});
 				});
 			});
