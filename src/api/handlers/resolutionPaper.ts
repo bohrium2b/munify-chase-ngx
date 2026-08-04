@@ -100,7 +100,6 @@ schemaBuilder.mutationFields((t) => ({
 			// Chairs must specify the creator; for committee-member callers this
 			// arg is ignored and the caller's own committeeMember is used.
 			creatorCommitteeMemberId: t.arg.id(),
-			seconderCommitteeMemberId: t.arg.id(),
 			// Only honored on the chair path. Committee members always create
 			// papers in WORKING_PAPER.
 			status: t.arg({ type: statusEnum }),
@@ -112,7 +111,6 @@ schemaBuilder.mutationFields((t) => ({
 			}));
 
 			let creatorCommitteeMemberId: string;
-			let seconderCommitteeMemberId: string | null = null;
 			let status: typeof schema.resolutionPaper.$inferSelect.status;
 			let editorConferenceUserIds: string[];
 
@@ -127,15 +125,6 @@ schemaBuilder.mutationFields((t) => ({
 					})
 					.then(assertFindFirstExists);
 				creatorCommitteeMemberId = creator.id;
-				if (args.seconderCommitteeMemberId) {
-					await db.query.committeeMember
-						.findFirst({
-							where: { id: args.seconderCommitteeMemberId, committeeId: args.committeeId },
-							columns: { id: true }
-						})
-						.then(assertFindFirstExists);
-					seconderCommitteeMemberId = args.seconderCommitteeMemberId;
-				}
 				status = args.status ?? 'SUBMITTED';
 				editorConferenceUserIds = creator.users.map((u) => u.id);
 			} else {
@@ -166,7 +155,6 @@ schemaBuilder.mutationFields((t) => ({
 					committeeId: args.committeeId,
 					agendaItemId: args.agendaItemId,
 					creatorCommitteeMemberId,
-					seconderCommitteeMemberId,
 					status,
 					title: args.title ?? null
 				});
@@ -206,8 +194,6 @@ schemaBuilder.mutationFields((t) => ({
 		args: {
 			id: t.arg.id({ required: true }),
 			title: t.arg.string(),
-			creatorCommitteeMemberId: t.arg.id(),
-			seconderCommitteeMemberId: t.arg.id(),
 			status: t.arg({ type: statusEnum }),
 			documentNumber: t.arg.string(),
 			deployConfetti: t.arg.boolean()
@@ -216,15 +202,9 @@ schemaBuilder.mutationFields((t) => ({
 			const updateFilter = ctx.abilities.resolutionPaper
 				.filter('update')
 				.merge({ where: { id: args.id } });
-			const paper = await db.query.resolutionPaper
-				.findFirst(updateFilter.query.single)
-				.then(assertFindFirstExists);
 
 			const needsChairCheck =
-				args.documentNumber != null ||
-				args.creatorCommitteeMemberId != null ||
-				args.seconderCommitteeMemberId != null ||
-				(args.status != null && args.status !== 'SUBMITTED');
+				args.documentNumber != null || (args.status != null && args.status !== 'SUBMITTED');
 			const isChair = needsChairCheck
 				? !!(await db.query.resolutionPaper.findFirst({
 						where: {
@@ -237,37 +217,20 @@ schemaBuilder.mutationFields((t) => ({
 			if (args.documentNumber != null && !isChair) {
 				throw new GraphQLError('Only chairs may set the document number');
 			}
-			if ((args.creatorCommitteeMemberId != null || args.seconderCommitteeMemberId != null) && !isChair) {
-				throw new GraphQLError('Only chairs may change paper roles');
-			}
 
 			// Persist plain metadata first, so it is set before any submission flow
 			const metaUpdate: Partial<typeof schema.resolutionPaper.$inferInsert> = {};
 			if (args.title != null) metaUpdate.title = args.title;
 			if (args.documentNumber != null) metaUpdate.documentNumber = args.documentNumber;
-			if (args.creatorCommitteeMemberId != null) {
-				await db.query.committeeMember
-					.findFirst({
-						where: { id: args.creatorCommitteeMemberId, committeeId: paper.committeeId },
-						columns: { id: true }
-					})
-					.then(assertFindFirstExists);
-				metaUpdate.creatorCommitteeMemberId = args.creatorCommitteeMemberId;
-			}
-			if (args.seconderCommitteeMemberId != null) {
-				await db.query.committeeMember
-					.findFirst({
-						where: { id: args.seconderCommitteeMemberId, committeeId: paper.committeeId },
-						columns: { id: true }
-					})
-					.then(assertFindFirstExists);
-				metaUpdate.seconderCommitteeMemberId = args.seconderCommitteeMemberId;
-			}
 			if (Object.keys(metaUpdate).length > 0) {
 				await db.update(schema.resolutionPaper).set(metaUpdate).where(updateFilter.sql.where);
 			}
 
 			if (args.status === 'SUBMITTED') {
+				const paper = await db.query.resolutionPaper
+					.findFirst(updateFilter.query.single)
+					.then(assertFindFirstExists);
+
 				if (paper.status === 'WORKING_PAPER') {
 					// Only the creator or a chair may submit.
 					const isChairSubmit = !!(await db.query.resolutionPaper.findFirst({

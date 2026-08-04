@@ -1,1 +1,0 @@
-ALTER TABLE "resolution_paper" ADD COLUMN "seconder_committee_member_id" text REFERENCES "committee_member"("id") ON DELETE set null;

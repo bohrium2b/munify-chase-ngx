@@ -417,7 +417,6 @@ export const resolutionPaper = snakeCase.table('resolution_paper', {
 	creatorCommitteeMemberId: text()
 		.notNull()
 		.references(() => committeeMember.id, { onDelete: 'cascade' }),
-	seconderCommitteeMemberId: text().references(() => committeeMember.id, { onDelete: 'set null' }),
 	status: paperStatus().notNull().default('WORKING_PAPER'),
 	title: text(),
 	documentNumber: text(),

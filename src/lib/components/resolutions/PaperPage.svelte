@@ -110,7 +110,6 @@
 		status: true,
 		documentNumber: true,
 		updatedAt: true,
-		seconderCommitteeMemberId: true,
 		committee: { id: true },
 		agendaItem: { title: true },
 		creatorCommitteeMember: {
@@ -125,32 +124,7 @@
 		},
 		editors: { id: true, conferenceUser: { id: true } }
 	});
-	type PaperWithRoles = (typeof papers)[number] & { seconderCommitteeMemberId?: string | null };
-	const paper = $derived((papers?.[0] as PaperWithRoles | undefined) ?? undefined);
-
-	const committeeMembers = await client.liveQuery.committeeMembers({
-		__args: { where: { committee: { id: committee?.id ?? '' } } },
-		id: true,
-		representation: {
-			name: true,
-			alpha2Code: true,
-			alpha3Code: true,
-			faIcon: true,
-			type: true
-		}
-	});
-
-	function getCommitteeMemberName(member: (typeof committeeMembers)[number] | undefined) {
-		return (
-			getTranslatedCountryNameFromAlpha3Code(member?.representation?.alpha3Code) ??
-			member?.representation?.name ??
-			''
-		);
-	}
-
-	const sortedCommitteeMembers = $derived(
-		[...(committeeMembers ?? [])].sort((a, b) => getCommitteeMemberName(a).localeCompare(getCommitteeMemberName(b)))
-	);
+	const paper = $derived(papers?.[0]);
 
 	const committees = await client.liveQuery.committees({
 		__args: { where: { resolutionPapers: { id: paperId } } },
@@ -709,25 +683,6 @@
 	}
 	let editingDocNum = $state(false);
 	let docNumDraft = $state('');
-	let editingRoles = $state(false);
-	let roleSaving = $state(false);
-	let roleProposerId = $state('');
-	let roleSeconderId = $state('');
-
-	function openRolesDialog() {
-		roleProposerId = paper?.creatorCommitteeMember?.id ?? '';
-		roleSeconderId =
-			paper?.seconderCommitteeMemberId && paper.seconderCommitteeMemberId !== roleProposerId
-				? paper.seconderCommitteeMemberId
-				: '';
-		editingRoles = true;
-	}
-
-	$effect(() => {
-		if (roleProposerId && roleSeconderId === roleProposerId) {
-			roleSeconderId = '';
-		}
-	});
 
 	async function saveDocNum() {
 		editingDocNum = false;
@@ -740,26 +695,6 @@
 			});
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : 'Failed to save document number');
-		}
-	}
-
-	async function saveRoles() {
-		if (!paper || !roleProposerId) return;
-		roleSaving = true;
-		try {
-			await client.mutate.updateResolutionPaper({
-				__args: {
-					id: paperId,
-					creatorCommitteeMemberId: roleProposerId,
-					seconderCommitteeMemberId: roleSeconderId || undefined
-				} as any,
-				id: true
-			} as any);
-			editingRoles = false;
-		} catch (err) {
-			toast.error(err instanceof Error ? err.message : 'Failed to save paper roles');
-		} finally {
-			roleSaving = false;
 		}
 	}
 	let submitting = $state(false);
@@ -981,14 +916,6 @@
 							/>
 						</div>
 					</div>
-						<button
-							class="btn btn-ghost btn-sm"
-							type="button"
-							title="Paper roles"
-							onclick={openRolesDialog}
-						>
-							<i class="fas fa-users-gear"></i>
-						</button>
 					<button
 						class="btn btn-ghost btn-sm"
 						onclick={() => (aiOnboardingOpen = true)}
@@ -1406,41 +1333,6 @@
 						<p class="opacity-50 mt-0.5">{aiDisabledReason}</p>
 					</div>
 				</div>
-			{/if}
-
-			{#if editingRoles}
-				<dialog class="modal" open>
-					<div class="modal-box bg-base-100 flex max-w-lg flex-col gap-4">
-						<h3 class="text-lg font-bold">Paper roles</h3>
-						<div class="flex flex-col gap-1">
-							<span class="label-text text-sm font-medium">{m.selectProposerDelegation()}</span>
-							<select class="select select-bordered w-full" bind:value={roleProposerId}>
-								{#each sortedCommitteeMembers as member (member.id)}
-									<option value={member.id}>{getCommitteeMemberName(member)}</option>
-								{/each}
-							</select>
-						</div>
-						<div class="flex flex-col gap-1">
-							<span class="label-text text-sm font-medium">Seconder</span>
-							<select class="select select-bordered w-full" bind:value={roleSeconderId}>
-								<option value="">No seconder</option>
-								{#each sortedCommitteeMembers.filter((member) => member.id !== roleProposerId) as member (member.id)}
-									<option value={member.id}>{getCommitteeMemberName(member)}</option>
-								{/each}
-							</select>
-						</div>
-						<div class="modal-action">
-							<button class="btn btn-ghost" onclick={() => (editingRoles = false)}>Cancel</button>
-							<button class="btn btn-primary" disabled={roleSaving} onclick={saveRoles}>
-								{#if roleSaving}<span class="loading loading-spinner loading-xs"></span>{/if}
-								Save
-							</button>
-						</div>
-					</div>
-					<form method="dialog" class="modal-backdrop">
-						<button onclick={() => (editingRoles = false)}>close</button>
-					</form>
-				</dialog>
 			{/if}
 		</div>
 	{/if}
