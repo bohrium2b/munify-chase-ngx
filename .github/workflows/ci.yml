@@ -35,9 +35,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: native-client
           fetch-depth: 0
-
+      - name: Fetch native-client branch
+        run: |
+          git fetch origin native-client:native-client
       - name: Wait for native-client to contain the released commit
         shell: bash
         run: |
