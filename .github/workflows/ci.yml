@@ -64,13 +64,13 @@ jobs:
             fi
             echo "Attempt $attempt/30: native-client does not yet contain $GITHUB_SHA, retrying in 30s…"
             if [ "$attempt" -eq 10 ]; then
-              echo "::warning::Still waiting after 10 attempts. If the commit is not picked up soon, check the open PRs — the Sync Native Client workflow may have created a PR to resolve a merge conflict that needs manual approval."
+              echo "::warning::Still waiting after 10 attempts."
             fi
             sleep 30
-            git fetch origin native-client --quiet
-            git reset --hard origin/native-client --quiet
+            git fetch upstream native-client --quiet
+            git reset --hard upstream/native-client --quiet
           done
-          echo "::error::native-client never picked up ${GITHUB_REF_NAME} (${GITHUB_SHA}). The Sync Native Client workflow probably hit a merge conflict — resolve its PR, then re-run this job."
+          echo "::error::native-client never picked up ${GITHUB_REF_NAME} (${GITHUB_SHA})."
           exit 1
 
       - uses: ./.github/actions/setup-bun
