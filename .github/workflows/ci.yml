@@ -36,9 +36,10 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - name: Fetch native-client branch
+      - name: Fetch native-client from upstream
         run: |
-          git fetch origin native-client:native-client
+          git remote add upstream https://github.com/DeutscheModelUnitedNations/munify-chase.git
+          git fetch upstream native-client:native-client
       - name: Wait for native-client to contain the released commit
         shell: bash
         run: |
