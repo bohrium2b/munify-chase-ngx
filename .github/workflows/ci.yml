@@ -83,7 +83,8 @@ jobs:
         with:
           tagName: v1
           releaseDraft: true
-          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+          prerelease: true
           args: ${{ matrix.args }}
+          releaseName: 'Munify Chase Test'
           
           
