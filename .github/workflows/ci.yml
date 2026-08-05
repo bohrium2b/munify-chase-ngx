@@ -53,26 +53,6 @@ jobs:
           git remote add upstream https://github.com/DeutscheModelUnitedNations/munify-chase.git
           git fetch upstream native-client:native-client
           git checkout -B native-client upstream/native-client
-      - name: Wait for native-client to contain the released commit
-        shell: bash
-        run: |
-          set -euo pipefail
-          for attempt in $(seq 1 30); do
-            if git merge-base --is-ancestor "$GITHUB_SHA" HEAD; then
-              echo "native-client contains $GITHUB_SHA."
-              exit 0
-            fi
-            echo "Attempt $attempt/30: native-client does not yet contain $GITHUB_SHA, retrying in 30s…"
-            if [ "$attempt" -eq 10 ]; then
-              echo "::warning::Still waiting after 10 attempts."
-            fi
-            sleep 30
-            git fetch upstream native-client --quiet
-            git reset --hard upstream/native-client --quiet
-          done
-          echo "::error::native-client never picked up ${GITHUB_REF_NAME} (${GITHUB_SHA})."
-          exit 1
-
       - uses: ./.github/actions/setup-bun
 
       - name: Install Rust stable
