@@ -134,7 +134,7 @@
 						aria-label="Move Speaker to Top"
 						onclick={() => moveSpeaker(speaker.id, 0)}
 					>
-						<i class="fa-solid fa-chevrons-up"></i>
+						<i class="fa-solid fa-angles-up"></i>
 					</button>
 					{#if i < speakers.length - 1}
 						<button
@@ -142,7 +142,7 @@
 							aria-label="Move Speaker to Bottom"
 							onclick={() => moveSpeaker(speaker.id, bottomPosition)}
 						>
-							<i class="fa-solid fa-chevrons-down"></i>
+							<i class="fa-solid fa-angles-down"></i>
 						</button>
 					{/if}
 				</div>
