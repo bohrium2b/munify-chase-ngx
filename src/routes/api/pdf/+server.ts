@@ -14,7 +14,8 @@ import type { RequestHandler } from './$types';
 
 const execFileAsync = promisify(execFile);
 
-const TYPST_BIN = join(process.cwd(), 'node_modules/.bin/typst');
+// Search for the Typst binary - either here or in the system PATH
+const TYPST_BIN = join(process.cwd(), 'node_modules/.bin/typst') || 'typst';
 
 /**
  * Decode a `data:image/svg+xml` URL back into raw SVG. Supports both the
