@@ -37,7 +37,7 @@
 				alpha3Code?: string | null;
 			} | null;
 		} | null;
-		seconder?: {
+		seconderCommitteeMember?: {
 			id?: string;
 			representation?: {
 				id?: string;
@@ -241,7 +241,7 @@
 		);
 	}
 
-	function getSeconderName(seconder: ActiveAmendment['seconder']): string {
+	function getSeconderName(seconder: ActiveAmendment['seconderCommitteeMember']): string {
 		if (!seconder?.representation) return '';
 		return (
 			getTranslatedCountryNameFromAlpha3Code(seconder.representation.alpha3Code) ??
@@ -284,10 +284,15 @@
 							<span class="font-medium">{getProposerName(activeAmendment.proposer)}</span>
 						</div>
 					{/if}
-					{#if activeAmendment.seconder?.representation}
+					{#if activeAmendment.seconderCommitteeMember?.representation}
 						<div class="flex items-center gap-2 rounded-box bg-base-200 py-1 pl-1 pr-3 text-base">
-							<Flag representation={activeAmendment.seconder.representation} size="sm" />
-							<span class="font-medium">{getSeconderName(activeAmendment.seconder)}</span>
+							<Flag
+								representation={activeAmendment.seconderCommitteeMember.representation}
+								size="sm"
+							/>
+							<span class="font-medium"
+								>{getSeconderName(activeAmendment.seconderCommitteeMember)}</span
+							>
 						</div>
 					{/if}
 				</div>

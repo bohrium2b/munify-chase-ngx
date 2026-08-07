@@ -444,6 +444,11 @@ export const relations = defineRelations(schema, (r) => ({
 			to: r.committeeMember.id,
 			optional: false
 		}),
+		seconderCommitteeMember: r.one.committeeMember({
+			from: r.amendment.seconderCommitteeMemberId,
+			to: r.committeeMember.id,
+			optional: true
+		}),
 		sponsors: r.many.amendmentSponsor({
 			from: r.amendment.id,
 			to: r.amendmentSponsor.amendmentId

@@ -66,7 +66,7 @@
 					alpha3Code: true
 				}
 			},
-			seconder: {
+			seconderCommitteeMember: {
 				id: true,
 				representation: {
 					id: true,

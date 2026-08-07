@@ -91,6 +91,10 @@ export type Amendment = {
     orderBy?: AmendmentreviewitemOrderInputArgument | null | undefined,
     where?: AmendmentreviewitemWhereInputArgument | null | undefined
   }) => Amendmentreviewitem[],
+  seconderCommitteeMember: (p?: {
+    orderBy?: CommitteememberOrderInputArgument | null | undefined,
+    where?: CommitteememberWhereInputArgument | null | undefined
+  }) => Committeemember | null,
   seconderCommitteeMemberId: ID | null,
   sponsors: (p?: {
     limit?: Int | null | undefined,
@@ -127,6 +131,7 @@ export type AmendmentOrderInputArgument = {
   proposer?: CommitteememberOrderInputArgument | null | undefined,
   proposerCommitteeMemberId?: SortingParameter | null | undefined,
   reviewItemsAsSubject?: AmendmentreviewitemOrderInputArgument | null | undefined,
+  seconderCommitteeMember?: CommitteememberOrderInputArgument | null | undefined,
   seconderCommitteeMemberId?: SortingParameter | null | undefined,
   sponsors?: AmendmentsponsorOrderInputArgument | null | undefined,
   status?: SortingParameter | null | undefined,
@@ -150,6 +155,7 @@ export type AmendmentWhereInputArgument = {
   proposer?: CommitteememberWhereInputArgument | null | undefined,
   proposerCommitteeMemberId?: ID | null | undefined,
   reviewItemsAsSubject?: AmendmentreviewitemWhereInputArgument | null | undefined,
+  seconderCommitteeMember?: CommitteememberWhereInputArgument | null | undefined,
   seconderCommitteeMemberId?: ID | null | undefined,
   sponsors?: AmendmentsponsorWhereInputArgument | null | undefined,
   status?: AmendmentstatusEnum | null | undefined,
