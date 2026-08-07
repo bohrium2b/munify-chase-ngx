@@ -13,105 +13,26 @@
 	import Majorities from '$lib/components/Majorities.svelte';
 	import { latchWhileDisconnected } from '$lib/state/connection.svelte';
 
-	const committee = await client.liveQuery.committee({
-		__args: { id: page.params.committeeId! },
-		id: true,
-		totalPresent: true,
-		simpleMajority: true,
-		twoThirdsMajority: true,
-		status: true,
-		statusHeadline: true,
-		statusUntil: true,
-		stateOfDebate: true,
-		activeAgendaItem: {
-			id: true,
-			title: true,
-			speakersList: {
-				id: true,
-				type: true,
-				isClosed: true,
-				speakingTime: true,
-				startTimestamp: true,
-				timeLeft: true,
-				phase: true,
-				agendaItem: {
-					id: true,
-					committee: {
-						id: true,
-						allowDelegationsToAddThemselvesToSpeakersList: true,
-						conferenceId: true
-					}
-				},
-				speakers: {
-					id: true,
-					position: true,
-					speakersListId: true,
-					overwriteName: true,
-					committeeMember: {
-						id: true,
-						representation: {
-							id: true,
-							name: true,
-							alpha2Code: true,
-							alpha3Code: true,
-							faIcon: true,
-							type: true
-						}
-					},
-					conferenceMember: {
-						id: true,
-						representation: {
-							id: true,
-							name: true,
-							alpha2Code: true,
-							alpha3Code: true,
-							faIcon: true,
-							type: true
-						}
-					}
-				}
-			}
-		},
-		members: {
-			id: true,
-			representation: {
-				id: true,
-				name: true,
-				alpha2Code: true,
-				alpha3Code: true,
-				faIcon: true,
-				type: true
-			}
-		},
-		conference: {
-			id: true,
-			uniqueConferenceMembers: {
-				id: true,
-				representation: {
-					id: true,
-					name: true,
-					alpha2Code: true,
-					alpha3Code: true,
-					faIcon: true,
-					type: true
-				}
-			}
-		}
-	});
+	interface Props {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		committee: any;
+	}
 
-	const minAmendmentSponsors = $derived(Math.ceil((committee?.totalPresent ?? 0) * 0.1));
+	let { committee }: Props = $props();
+
+	const minAmendmentSponsors = $derived(Math.ceil((committee.totalPresent ?? 0) * 0.1));
 
 	// Freeze the last-known agenda item while the WS is confirmed disconnected, so a
 	// transient network blip doesn't flash "no agenda item selected" over the page —
 	// only a genuine agenda item change (selected/cleared) does.
-	const getActiveAgendaItem = latchWhileDisconnected(() => committee?.activeAgendaItem);
+	const getActiveAgendaItem = latchWhileDisconnected(() => committee.activeAgendaItem);
 	let activeAgendaItem = $derived(getActiveAgendaItem());
 
 	let speakersList = $derived(
-		activeAgendaItem?.speakersList.find((item) => item.type === 'SPEAKERS_LIST')
+		activeAgendaItem?.speakersList.find((item: any) => item.type === 'SPEAKERS_LIST')
 	);
 	let commentList = $derived(
-		activeAgendaItem?.speakersList.find((item) => item.type === 'COMMENT_LIST')
+		activeAgendaItem?.speakersList.find((item: any) => item.type === 'COMMENT_LIST')
 	);
 </script>
 
