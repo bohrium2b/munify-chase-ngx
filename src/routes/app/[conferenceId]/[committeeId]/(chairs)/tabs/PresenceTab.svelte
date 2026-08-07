@@ -30,19 +30,17 @@
 	let { committee }: Props = $props();
 
 	const minAmendmentSponsors = $derived(Math.ceil((committee.totalPresent ?? 0) * 0.1));
-
 	let countries = $derived(
 		(committee.members ?? [])
 			.filter(isDelegationMember)
-			.sort((a: any, b: any) => sortTranslatedCountries(a.representation, b.representation)) ?? []
+			.sort((a, b) => sortTranslatedCountries(a.representation, b.representation)) ?? []
 	);
 
 	let un = $derived(
 		(committee.conference?.uniqueConferenceMembers ?? [])
 			?.filter(isUNMember)
-			?.sort((a: any, b: any) =>
-				(a.representation.name ?? '').localeCompare(b.representation.name ?? '')
-			) ?? []
+			?.sort((a, b) => (a.representation.name ?? '').localeCompare(b.representation.name ?? '')) ??
+			[]
 	);
 
 	let activeSession = $derived(committee.activeRollCallSession ?? null);

@@ -19,6 +19,7 @@
 	import PaperPage from '$lib/components/resolutions/PaperPage.svelte';
 
 	interface Props {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		committee: any;
 	}
 

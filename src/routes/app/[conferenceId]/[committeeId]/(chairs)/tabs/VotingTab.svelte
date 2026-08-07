@@ -10,6 +10,7 @@
 	import VotingSetup from '$lib/components/voting/VotingSetup.svelte';
 
 	interface Props {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		committee: any;
 	}
 

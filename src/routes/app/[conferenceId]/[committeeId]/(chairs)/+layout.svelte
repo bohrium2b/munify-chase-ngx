@@ -1,3 +1,4 @@
+<!-- eslint-disable @typescript-eslint/no-explicit-any -->
 <script lang="ts">
 	import { type Snippet } from 'svelte';
 	import { goto } from '$app/navigation';
@@ -271,6 +272,7 @@
 		// Replace the URL so the back button stays intuitive, but don't
 		// invalidate load data — everything is driven by the shared
 		// liveQuery in this layout.
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
 		goto(dockItems.find((t) => t.key === key)!.href, {
 			replaceState: true,
 			invalidateAll: false
@@ -411,13 +413,12 @@
 	<div class="pb-16">
 		{#each dockItems as item (item.key)}
 			{#if activeTab === item.key || preloadedTabs.includes(item.key)}
+				{@const Component = item.component}
 				<div
 					style:display={activeTab === item.key ? 'block' : 'none'}
 					aria-hidden={activeTab !== item.key}
 				>
-					{@const Component = item.component}
-					{@const committeeAny = committee as any} // eslint-disable-line @typescript-eslint/no-explicit-any
-					<Component committee={committeeAny} />
+					<Component {committee} />
 				</div>
 			{/if}
 		{/each}
@@ -450,8 +451,9 @@
 <!-- Bottom dock -->
 <div class="dock dock-md lg:dock-lg md:justify-center md:gap-4">
 	{#each dockItems as item, i (item.key)}
+		{@const itemHref = item.href}
 		<a
-			href={item.href}
+			href={itemHref}
 			class="group relative {isActive(item.key) &&
 			!(
 				item.key === 'resolutions' &&
