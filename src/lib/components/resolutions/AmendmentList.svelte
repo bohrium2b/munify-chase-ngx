@@ -161,10 +161,7 @@
 			id: true,
 			representation: { name: true, alpha2Code: true, alpha3Code: true, faIcon: true, type: true }
 		},
-		seconder: {
-			id: true,
-			representation: { name: true, alpha2Code: true, alpha3Code: true, faIcon: true, type: true }
-		},
+		seconderCommitteeMemberId: true,
 		sponsors: { id: true, amendmentId: true, committeeMember: { id: true } }
 	});
 
@@ -508,15 +505,6 @@
 								a.proposer?.representation?.name ??
 								m.unknown()}</span
 						>
-						{#if a.seconder?.representation}
-							<span class="text-base-content/40">·</span>
-							<Flag representation={a.seconder.representation} size="xs" />
-							<span
-								>{getTranslatedCountryNameFromAlpha3Code(a.seconder.representation?.alpha3Code) ??
-									a.seconder.representation?.name ??
-									m.unknown()}</span
-							>
-						{/if}
 						<span class="text-base-content/40">·</span>
 						{#if team}
 							<button
@@ -751,7 +739,7 @@
 			id={amendment.id}
 			{committeeId}
 			currentProposerId={amendment.proposer?.id ?? null}
-			currentSeconderId={amendment.seconder?.id ?? null}
+			currentSeconderId={amendment.seconderCommitteeMemberId ?? null}
 		/>
 	{/if}
 {/if}

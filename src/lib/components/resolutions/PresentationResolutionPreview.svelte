@@ -127,10 +127,6 @@
 			id: true,
 			representation: { id: true, name: true, alpha2Code: true, alpha3Code: true }
 		},
-		seconder: {
-			id: true,
-			representation: { id: true, name: true, alpha2Code: true, alpha3Code: true }
-		},
 		sponsors: { id: true }
 	});
 	const clauseVotes = await client.liveQuery.operativeClauseVotes({
@@ -146,7 +142,7 @@
 	);
 
 	// ---- Header data (mirrors PaperPage.svelte) -----------------------------
-	const headerData = $derived<ResolutionHeaderData & { secondingDelegation?: string }>({
+	const headerData = $derived<ResolutionHeaderData>({
 		conferenceTitle: committee?.conference?.title ?? undefined,
 		conferenceEmblem: svgToDataUrl(committee?.conference?.logoSvg),
 		committeeAbbreviation: committee?.abbreviation ?? undefined,
@@ -158,12 +154,6 @@
 				paper?.creatorCommitteeMember?.representation?.alpha3Code
 			) ??
 			paper?.creatorCommitteeMember?.representation?.name ??
-			undefined,
-		secondingDelegation:
-			getTranslatedCountryNameFromAlpha3Code(
-				paper?.seconderCommitteeMember?.representation?.alpha3Code
-			) ??
-			paper?.seconderCommitteeMember?.representation?.name ??
 			undefined,
 		sponsoringDelegations: (paper?.sponsors ?? []).map(
 			(s) =>
@@ -404,40 +394,6 @@
 			class="resolution-font-size-wrapper h-full w-full overflow-auto p-8 [&_.active-clause]:bg-warning/10"
 			style="--resolution-font-size: {resolutionFontSize}px"
 		>
-			{#if paper}
-				<div class="mb-4 flex flex-wrap items-center gap-3">
-					{#if paper.creatorCommitteeMember?.representation}
-						<div class="flex items-center gap-2 rounded-box bg-base-200 px-3 py-1.5 text-sm">
-							<Flag representation={paper.creatorCommitteeMember.representation} size="xs" />
-							<span class="font-medium">
-								{m.proposer()}:
-								{getTranslatedCountryNameFromAlpha3Code(
-									paper.creatorCommitteeMember.representation.alpha3Code
-								) ?? paper.creatorCommitteeMember.representation.name}
-							</span>
-						</div>
-					{/if}
-					{#if paper.seconderCommitteeMember?.representation}
-						<div class="flex items-center gap-2 rounded-box bg-base-200 px-3 py-1.5 text-sm">
-							<Flag representation={paper.seconderCommitteeMember.representation} size="xs" />
-							<span class="font-medium">
-								{m.seconder()}:
-								{getTranslatedCountryNameFromAlpha3Code(
-									paper.seconderCommitteeMember.representation.alpha3Code
-								) ?? paper.seconderCommitteeMember.representation.name}
-							</span>
-						</div>
-					{/if}
-					{#if paper.sponsors?.length}
-						<div class="flex items-center gap-2 rounded-box bg-base-200 px-3 py-1.5 text-sm">
-							<i class="fas fa-users text-base-content/60"></i>
-							<span class="font-medium">
-								{m.sponsors()}: {paper.sponsors.length}
-							</span>
-						</div>
-					{/if}
-				</div>
-			{/if}
 			<ResolutionPreview
 				{resolution}
 				{headerData}
@@ -447,7 +403,6 @@
 				amendments={overlays}
 				{rejectedClauseIds}
 			>
-				{#snippet previewHeader()}{/snippet}
 				{#snippet afterOperativeClause({ clause })}
 					{#if clause.id === activeClauseId}
 						<span use:scrollClauseIntoView></span>
