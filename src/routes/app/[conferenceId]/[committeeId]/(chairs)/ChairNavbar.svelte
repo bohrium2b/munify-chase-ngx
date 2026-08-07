@@ -71,6 +71,7 @@
 		commentList?: SpeakersList;
 		committeeMembers?: MemberLike[];
 		conferenceMembers?: MemberLike[];
+		committees?: Array<{ id: string; name: string; abbreviation: string }>;
 	}
 
 	let {
@@ -79,7 +80,8 @@
 		speakersList,
 		commentList,
 		committeeMembers = [],
-		conferenceMembers = []
+		conferenceMembers = [],
+		committees = []
 	}: Props = $props();
 
 	const conferenceId = $derived(page.params.conferenceId!);
@@ -105,16 +107,6 @@
 	});
 
 	let role = $derived(conferenceUsers?.[0]?.conferenceUserType);
-
-	const conference = await client.liveQuery.conference({
-		__args: { id: page.params.conferenceId! },
-		id: true,
-		committees: {
-			id: true,
-			name: true,
-			abbreviation: true
-		}
-	});
 
 	const isGlobalAdmin = await client.query.isGlobalAdmin();
 
@@ -198,7 +190,7 @@
 			roleBadgeClass={roleBadgeClassFor(role)}
 			{conferenceTitle}
 			{conferenceId}
-			committees={role === 'ADMIN' || role === 'TEAM' ? (conference?.committees ?? []) : []}
+			committees={role === 'ADMIN' || role === 'TEAM' ? committees : []}
 			dashboardHref="/app"
 			signOutHref="/logout"
 		/>

@@ -8,10 +8,10 @@
 	import emptyStreet from '$assets/undraw/empty_street.svg';
 	import StatusWidget from '../StatusWidget.svelte';
 	import VotingSetup from '$lib/components/voting/VotingSetup.svelte';
+	import { type CommitteeWithRelations } from '$lib/types/committee';
 
 	interface Props {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		committee: any;
+		committee: CommitteeWithRelations;
 	}
 
 	let { committee }: Props = $props();

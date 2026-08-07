@@ -2,6 +2,7 @@
 	import { m } from '$lib/paraglide/messages';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
+	import { goto } from '$app/navigation';
 	import { client } from '$lib/api/rumbleClient/client';
 	import { nanoid } from '$lib/helpers/nanoid';
 	import { workingPaperName } from '$lib/helpers/paperName';
@@ -17,10 +18,10 @@
 	} from '$lib/components/resolutions/paperContext';
 	import toast from 'svelte-french-toast';
 	import PaperPage from '$lib/components/resolutions/PaperPage.svelte';
+	import { type CommitteeWithRelations } from '$lib/types/committee';
 
 	interface Props {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		committee: any;
+		committee: CommitteeWithRelations;
 	}
 
 	let { committee }: Props = $props();
@@ -127,7 +128,7 @@
 				},
 				id: true
 			});
-			if (created) window.location.href = paperHref(created.id);
+			if (created) goto(paperHref(created.id));
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : 'Failed to create paper');
 		} finally {

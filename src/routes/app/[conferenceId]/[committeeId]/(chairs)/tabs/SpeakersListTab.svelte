@@ -12,10 +12,10 @@
 	import StatusWidget from '../StatusWidget.svelte';
 	import Majorities from '$lib/components/Majorities.svelte';
 	import { latchWhileDisconnected } from '$lib/state/connection.svelte';
+	import { type CommitteeWithRelations } from '$lib/types/committee';
 
 	interface Props {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		committee: any;
+		committee: CommitteeWithRelations;
 	}
 
 	let { committee }: Props = $props();
@@ -29,12 +29,10 @@
 	let activeAgendaItem = $derived(getActiveAgendaItem());
 
 	let speakersList = $derived(
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		activeAgendaItem?.speakersList.find((item: any) => item.type === 'SPEAKERS_LIST')
+		activeAgendaItem?.speakersList.find((item) => item.type === 'SPEAKERS_LIST')
 	);
 	let commentList = $derived(
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		activeAgendaItem?.speakersList.find((item: any) => item.type === 'COMMENT_LIST')
+		activeAgendaItem?.speakersList.find((item) => item.type === 'COMMENT_LIST')
 	);
 </script>
 

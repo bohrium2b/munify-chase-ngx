@@ -16,6 +16,7 @@
 	import { getServerTime } from '$lib/state/serverTime.svelte';
 	import hotkeys from 'hotkeys-js';
 	import VotingModal from '$lib/components/voting/VotingModal.svelte';
+	import { type CommitteeWithRelations } from '$lib/types/committee';
 	import AdoptionConfetti from '$lib/components/AdoptionConfetti.svelte';
 	import { openPresentationWindow } from '$lib/state/presentationWindow.svelte';
 
@@ -39,7 +40,7 @@
 	// Shared committee query — covers every field needed by all five tabs,
 	// so no tab needs to re-query committee data. Reactive liveQuery proxy
 	// auto-updates all tabs via WebSocket subscriptions.
-	const committee = await client.liveQuery.committee({
+	const committee: CommitteeWithRelations = await client.liveQuery.committee({
 		__args: { id: committeeId },
 		id: true,
 		abbreviation: true,
@@ -144,6 +145,11 @@
 			id: true,
 			title: true,
 			hasModeratedCaucus: true,
+			committees: {
+				id: true,
+				name: true,
+				abbreviation: true
+			},
 			uniqueConferenceMembers: {
 				id: true,
 				representation: {
@@ -289,6 +295,20 @@
 		return activeTab === key;
 	}
 
+	function isDockItemActive(key: TabKey): boolean {
+		if (isActive(key)) {
+			if (key === 'resolutions' && committee?.activeDraftResolutionId) {
+				const paperRoute = resolve(
+					'/app/[conferenceId]/[committeeId]/(chairs)/resolutions/[paperId]',
+					{ conferenceId, committeeId, paperId: committee.activeDraftResolutionId }
+				);
+				return page.url.pathname === paperRoute;
+			}
+			return true;
+		}
+		return false;
+	}
+
 	$effect(() => {
 		hotkeys('alt+1, alt+2, alt+3, alt+4, alt+5', (event, handler) => {
 			event.preventDefault();
@@ -315,11 +335,20 @@
 	let speakersListOvertimeAlerted = $state(false);
 	let commentListOvertimeAlerted = $state(false);
 
+	let toastInterval: ReturnType<typeof setInterval> | null = null;
+
+	function clearToastInterval() {
+		if (toastInterval !== null) {
+			clearInterval(toastInterval);
+			toastInterval = null;
+		}
+	}
+
 	$effect(() => {
-		// Toast Effect
+		clearToastInterval();
 		if (!committee) return;
 
-		const interval = setInterval(() => {
+		toastInterval = setInterval(() => {
 			if (dayjs(committee.statusUntil).diff(getServerTime()) < 0) {
 				if (!committeeStatusExpiredAlerted) {
 					toast.error(
@@ -343,7 +372,6 @@
 						speakersList.timeLeft <
 					0;
 
-				//	XAND only fire if both are false. Both true can be ignored, case should not happen.
 				if (overtime && speakersListOvertimeAlerted === commentListOvertimeAlerted) {
 					toast.error(m.speakersListOvertime(), {
 						icon: BellIcon
@@ -362,7 +390,7 @@
 				}
 			}
 		}, 1000);
-		return () => clearInterval(interval);
+		return clearToastInterval;
 	});
 
 	$effect(() => {
@@ -391,6 +419,7 @@
 	{commentList}
 	committeeMembers={committee?.members ?? []}
 	conferenceMembers={committee?.conference?.uniqueConferenceMembers ?? []}
+	committees={committee?.conference?.committees ?? []}
 />
 
 {#if useInlineTabs}
@@ -454,14 +483,7 @@
 		{@const itemHref = item.href}
 		<a
 			href={itemHref}
-			class="group relative {isActive(item.key) &&
-			!(
-				item.key === 'resolutions' &&
-				committee?.activeDraftResolutionId &&
-				page.url.pathname.includes(committee.activeDraftResolutionId)
-			)
-				? 'dock-active'
-				: ''}"
+			class="group relative {isDockItemActive(item.key) ? 'dock-active' : ''}"
 			onmouseenter={() => handleTabHover(item.key)}
 			onclick={(e) => {
 				// Intercept dock clicks so we switch tabs client-side instead

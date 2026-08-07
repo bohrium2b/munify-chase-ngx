@@ -10,6 +10,7 @@
 	import toast from 'svelte-french-toast';
 	import { promiseToastStrings } from '$lib/utils/toast';
 	import { compareSpeakers } from '$lib/helpers/speakerSort';
+	import { SvelteMap } from 'svelte/reactivity';
 
 	type Speaker = {
 		id: string;
@@ -48,6 +49,16 @@
 	let speakers = $derived(sortedSpeakers?.toSpliced(0, 1));
 	let bottomPosition = $derived(speakers?.at(-1)?.position ?? 0);
 
+	let positionMap = $derived.by(() => {
+		const map = new SvelteMap<string, number>();
+		for (const s of rawSpeakers ?? []) {
+			map.set(s.id, s.position);
+		}
+		return map;
+	});
+
+	const currentPosition = (id: string) => positionMap.get(id) ?? -1;
+
 	const getRepresentation = (speaker: NonNullable<Props['rawSpeakers']>[number]) => {
 		return speaker.committeeMember
 			? speaker.committeeMember.representation
@@ -68,8 +79,6 @@
 			promiseToastStrings(m.speaker(), 'delete')
 		);
 	};
-
-	const currentPosition = (id: string) => rawSpeakers?.find((s) => s.id === id)?.position ?? -1;
 
 	const moveSpeaker = (speakerOnListId: string, target: number) => {
 		if (!speakerOnListId || target < 0 || target > bottomPosition) return;

@@ -101,12 +101,13 @@
 				step="1"
 				bind:value={localRootFontSize}
 				onchange={() =>
-					client.mutate
-						.updateCommittee({
+					toast.promise(
+						client.mutate.updateCommittee({
 							__args: { id: committeeId, presentationRootFontSize: localRootFontSize },
 							id: true
-						})
-						.catch(() => {})}
+						}),
+						promiseToastStrings(m.baseFontSize(), 'update')
+					)}
 				class="range range-primary w-full"
 			/>
 			<span class="w-10 text-center">{localRootFontSize}</span>
@@ -124,15 +125,16 @@
 				step="1"
 				bind:value={localResolutionFontSize}
 				onchange={() =>
-					client.mutate
-						.updateCommittee({
+					toast.promise(
+						client.mutate.updateCommittee({
 							__args: {
 								id: committeeId,
 								presentationResolutionFontSize: localResolutionFontSize
 							},
 							id: true
-						})
-						.catch(() => {})}
+						}),
+						promiseToastStrings(m.resolutionFontSize(), 'update')
+					)}
 				class="range range-primary w-full"
 			/>
 			<span class="w-10 text-center">{localResolutionFontSize}</span>

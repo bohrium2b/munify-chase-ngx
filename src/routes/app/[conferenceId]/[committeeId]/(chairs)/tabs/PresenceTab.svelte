@@ -21,10 +21,10 @@
 	import { isDelegationMember, isUNMember } from '$lib/helpers/distinguishConferenceMembers';
 	import { translateRegionalGroupEnum } from '$lib/utils/enumTranslationHelper';
 	import NsaAttendanceCard from '../presence/NsaAttendanceCard.svelte';
+	import { type CommitteeWithRelations } from '$lib/types/committee';
 
 	interface Props {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		committee: any;
+		committee: CommitteeWithRelations;
 	}
 
 	let { committee }: Props = $props();
@@ -33,17 +33,14 @@
 	let countries = $derived(
 		(committee.members ?? [])
 			.filter(isDelegationMember)
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			.sort((a: any, b: any) => sortTranslatedCountries(a.representation, b.representation)) ?? []
+			.sort((a, b) => sortTranslatedCountries(a.representation, b.representation)) ?? []
 	);
 
 	let un = $derived(
 		(committee.conference?.uniqueConferenceMembers ?? [])
 			?.filter(isUNMember)
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			?.sort((a: any, b: any) =>
-				(a.representation.name ?? '').localeCompare(b.representation.name ?? '')
-			) ?? []
+			?.sort((a, b) => (a.representation.name ?? '').localeCompare(b.representation.name ?? '')) ??
+			[]
 	);
 
 	let activeSession = $derived(committee.activeRollCallSession ?? null);
@@ -176,8 +173,7 @@
 				</div>
 			</BasicCard>
 			<BasicCard>
-				<!-- eslint-disable-next-line @typescript-eslint/no-explicit-any -->
-				{@const memberIds = committee.members.map((x: any) => x.id)}
+				{@const memberIds = committee.members.map((x) => x.id)}
 				<PresenceActions {memberIds} />
 			</BasicCard>
 		</div>

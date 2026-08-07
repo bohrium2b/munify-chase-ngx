@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
+	import { type CommitteeWithRelations } from '$lib/types/committee';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import { client } from '$lib/api/rumbleClient/client';
@@ -26,8 +27,7 @@
 	} from '$lib/state/presentationWindow.svelte';
 
 	interface Props {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		committee: any;
+		committee: CommitteeWithRelations;
 	}
 
 	let { committee }: Props = $props();

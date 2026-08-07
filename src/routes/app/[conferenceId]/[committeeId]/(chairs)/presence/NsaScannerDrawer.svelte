@@ -42,7 +42,7 @@
 		try {
 			const Ctx =
 				window.AudioContext ??
-				(window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+				(window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
 			if (!Ctx) return;
 			const ctx: AudioContext = new Ctx();
 			const osc = ctx.createOscillator();
