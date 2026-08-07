@@ -51,7 +51,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	try {
 		await access(TYPST_BIN);
 	} catch {
-		throw error(500, 'Typst binary not available on the server');
+		throw error(500, 'Typst binary not available on the server: ' + TYPST_BIN);
 	}
 
 	const dir = await mkdtemp(join(tmpdir(), 'mun-'));

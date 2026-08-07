@@ -425,10 +425,26 @@
 	);
 
 	let availableMembers = $derived(
-		[...committeeMembers, ...conferenceMembers].filter((m) => !membersOnList.has(m.id))
+		[...committeeMembers, ...conferenceMembers].filter(
+			(m) => !membersOnList.has(m.id) && m.present !== false
+		)
 	);
 
 	let addPopoverOpen = $state(false);
+	let searchQuery = $state('');
+
+	const matchesSearch = (member: MemberLike) => {
+		const name = getName(member).toLowerCase();
+		return name.includes(searchQuery.toLowerCase());
+	};
+
+	let filteredAvailableMembers = $derived(availableMembers.filter(matchesSearch));
+
+	$effect(() => {
+		if (!addPopoverOpen) {
+			searchQuery = '';
+		}
+	});
 
 	const addSpeaker = async (member: MemberLike) => {
 		if (!latchedSpeakersList?.id) return;
@@ -457,6 +473,16 @@
 		};
 		hotkeys('shift+space', handler);
 		return () => hotkeys.unbind('shift+space', handler);
+	});
+
+	$effect(() => {
+		const handler = (event: KeyboardEvent) => {
+			event.preventDefault();
+			if (!latchedSpeakersList) return;
+			addPopoverOpen = true;
+		};
+		hotkeys('alt+a', handler);
+		return () => hotkeys.unbind('alt+a', handler);
 	});
 </script>
 
@@ -507,13 +533,23 @@
 				</button>
 			{/snippet}
 			{#snippet Content()}
-				<div class="flex max-h-80 flex-col">
+				<div class="flex max-h-96 flex-col">
 					<div class="p-2 pb-0 text-sm font-bold opacity-70">Add to speakers list</div>
+					<div class="p-2">
+						<input
+							type="text"
+							class="input input-sm w-full"
+							placeholder="Search..."
+							bind:value={searchQuery}
+						/>
+					</div>
 					<div class="overflow-y-auto">
-						{#if availableMembers.length === 0}
-							<div class="p-3 text-sm opacity-60">No members available</div>
+						{#if filteredAvailableMembers.length === 0}
+							<div class="p-3 text-sm opacity-60">
+								{searchQuery ? 'No matches' : 'No members available'}
+							</div>
 						{:else}
-							{#each availableMembers as member (member.id)}
+							{#each filteredAvailableMembers as member (member.id)}
 								{@const rep = member.representation}
 								<button
 									class="flex w-full items-center gap-2 p-2 text-left transition-colors hover:bg-base-200"
@@ -523,9 +559,6 @@
 									<span class="flex-1 truncate text-sm">
 										{getName(member)}
 									</span>
-									{#if typeof member.present === 'boolean' && !member.present}
-										<i class="fa-duotone fa-user-xmark opacity-50"></i>
-									{/if}
 								</button>
 							{/each}
 						{/if}
@@ -543,13 +576,23 @@
 			</button>
 		{/snippet}
 		{#snippet Content()}
-			<div class="flex max-h-80 flex-col">
+			<div class="flex max-h-96 flex-col">
 				<div class="p-2 pb-0 text-sm font-bold opacity-70">Add to speakers list</div>
+				<div class="p-2">
+					<input
+						type="text"
+						class="input input-sm w-full"
+						placeholder="Search..."
+						bind:value={searchQuery}
+					/>
+				</div>
 				<div class="overflow-y-auto">
-					{#if availableMembers.length === 0}
-						<div class="p-3 text-sm opacity-60">No members available</div>
+					{#if filteredAvailableMembers.length === 0}
+						<div class="p-3 text-sm opacity-60">
+							{searchQuery ? 'No matches' : 'No members available'}
+						</div>
 					{:else}
-						{#each availableMembers as member (member.id)}
+						{#each filteredAvailableMembers as member (member.id)}
 							{@const rep = member.representation}
 							<button
 								class="flex w-full items-center gap-2 p-2 text-left transition-colors hover:bg-base-200"
@@ -559,9 +602,6 @@
 								<span class="flex-1 truncate text-sm">
 									{getName(member)}
 								</span>
-								{#if typeof member.present === 'boolean' && !member.present}
-									<i class="fa-duotone fa-user-xmark opacity-50"></i>
-								{/if}
 							</button>
 						{/each}
 					{/if}

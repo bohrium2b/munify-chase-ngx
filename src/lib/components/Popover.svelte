@@ -21,7 +21,7 @@
 	<Popover.Portal>
 		<Popover.Content forceMount sideOffset={8}>
 			{#if open}
-				<div class="card bg-base-100 shadow-md" transition:fly={{ y: -20, duration: 500 }}>
+				<div class="card bg-base-100 shadow-md z-[9999]" transition:fly={{ y: -20, duration: 500 }}>
 					<div class="card-body p-4">
 						{@render Content()}
 					</div>
