@@ -29,9 +29,11 @@
 	let activeAgendaItem = $derived(getActiveAgendaItem());
 
 	let speakersList = $derived(
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		activeAgendaItem?.speakersList.find((item: any) => item.type === 'SPEAKERS_LIST')
 	);
 	let commentList = $derived(
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		activeAgendaItem?.speakersList.find((item: any) => item.type === 'COMMENT_LIST')
 	);
 </script>

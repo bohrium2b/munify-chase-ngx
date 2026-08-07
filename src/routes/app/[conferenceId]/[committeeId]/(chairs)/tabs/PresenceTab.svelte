@@ -33,14 +33,17 @@
 	let countries = $derived(
 		(committee.members ?? [])
 			.filter(isDelegationMember)
-			.sort((a, b) => sortTranslatedCountries(a.representation, b.representation)) ?? []
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			.sort((a: any, b: any) => sortTranslatedCountries(a.representation, b.representation)) ?? []
 	);
 
 	let un = $derived(
 		(committee.conference?.uniqueConferenceMembers ?? [])
 			?.filter(isUNMember)
-			?.sort((a, b) => (a.representation.name ?? '').localeCompare(b.representation.name ?? '')) ??
-			[]
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			?.sort((a: any, b: any) =>
+				(a.representation.name ?? '').localeCompare(b.representation.name ?? '')
+			) ?? []
 	);
 
 	let activeSession = $derived(committee.activeRollCallSession ?? null);
@@ -173,7 +176,9 @@
 				</div>
 			</BasicCard>
 			<BasicCard>
-				<PresenceActions memberIds={committee.members.map((x: any) => x.id)} />
+				<!-- eslint-disable-next-line @typescript-eslint/no-explicit-any -->
+				{@const memberIds = committee.members.map((x: any) => x.id)}
+				<PresenceActions {memberIds} />
 			</BasicCard>
 		</div>
 		<div class="flex h-full w-full flex-3 flex-col gap-4">
