@@ -48,11 +48,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - name: Fetch native-client from upstream
-        run: |
-          git remote add upstream https://github.com/DeutscheModelUnitedNations/munify-chase.git
-          git fetch upstream native-client:native-client
-          git checkout -B native-client origin/native-client
+          branch: native-client
       - uses: ./.github/actions/setup-bun
 
       - name: Install Rust stable
