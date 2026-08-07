@@ -1319,7 +1319,7 @@
 		bind:open={proposerSeconderModalOpen}
 		close={() => (proposerSeconderModalOpen = false)}
 		kind="paper"
-		{paperId}
+		id={paperId}
 		committeeId={committee.id}
 		currentProposerId={paper?.creatorCommitteeMember?.id ?? null}
 		currentSeconderId={paper?.seconderCommitteeMember?.id ?? null}
