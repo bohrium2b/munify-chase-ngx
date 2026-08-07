@@ -162,6 +162,7 @@ function alpha2ToFlagEmoji(alpha2: string): string {
 export function toAmendmentOverlays(rows: readonly AmendmentRow[]): AmendmentOverlay[] {
 	const overlays: AmendmentOverlay[] = [];
 	for (const r of rows) {
+		if (r.status === 'REJECTED') continue;
 		let newContent;
 		if ((r.type === 'ADD' || r.type === 'ALTER_TEXT') && r.newContent) {
 			const parsed = parseClauseFragment(r.newContent);
