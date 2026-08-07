@@ -65,6 +65,27 @@
 					alpha2Code: true,
 					alpha3Code: true
 				}
+			},
+			seconder: {
+				id: true,
+				representation: {
+					id: true,
+					name: true,
+					alpha2Code: true,
+					alpha3Code: true
+				}
+			},
+			sponsors: {
+				id: true,
+				committeeMember: {
+					id: true,
+					representation: {
+						id: true,
+						name: true,
+						alpha2Code: true,
+						alpha3Code: true
+					}
+				}
 			}
 		},
 		lastResolutionAdoptionDate: true,

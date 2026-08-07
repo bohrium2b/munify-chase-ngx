@@ -46,6 +46,18 @@
 				alpha3Code?: string | null;
 			} | null;
 		} | null;
+		sponsors?: {
+			id: string;
+			committeeMember: {
+				id: string;
+				representation: {
+					id?: string;
+					name?: string | null;
+					alpha2Code?: string | null;
+					alpha3Code?: string | null;
+				} | null;
+			} | null;
+		}[];
 	}
 
 	interface Props {
@@ -279,6 +291,25 @@
 						</div>
 					{/if}
 				</div>
+				{#if activeAmendment.sponsors?.length}
+					<div class="flex flex-wrap items-center gap-2">
+						<i class="fas fa-users text-base-content/60 text-sm"></i>
+						{#each activeAmendment.sponsors as sponsor}
+							{#if sponsor.committeeMember?.representation}
+								<div
+									class="flex items-center gap-1.5 rounded-box bg-base-200 py-0.5 pl-1 pr-2 text-sm"
+								>
+									<Flag representation={sponsor.committeeMember.representation} size="xs" />
+									<span class="font-medium">
+										{getTranslatedCountryNameFromAlpha3Code(
+											sponsor.committeeMember.representation.alpha3Code
+										) ?? sponsor.committeeMember.representation.name}
+									</span>
+								</div>
+							{/if}
+						{/each}
+					</div>
+				{/if}
 			</div>
 
 			{#if activeAmendment.type === 'DELETE' && resolvedActiveAmendIdx >= 0}
@@ -394,6 +425,40 @@
 			class="resolution-font-size-wrapper h-full w-full overflow-auto p-8 [&_.active-clause]:bg-warning/10"
 			style="--resolution-font-size: {resolutionFontSize}px"
 		>
+			{#if paper}
+				<div class="mb-4 flex flex-wrap items-center gap-3">
+					{#if paper.creatorCommitteeMember?.representation}
+						<div class="flex items-center gap-2 rounded-box bg-base-200 px-3 py-1.5 text-sm">
+							<Flag representation={paper.creatorCommitteeMember.representation} size="xs" />
+							<span class="font-medium">
+								{m.proposer()}:
+								{getTranslatedCountryNameFromAlpha3Code(
+									paper.creatorCommitteeMember.representation.alpha3Code
+								) ?? paper.creatorCommitteeMember.representation.name}
+							</span>
+						</div>
+					{/if}
+					{#if paper.seconderCommitteeMember?.representation}
+						<div class="flex items-center gap-2 rounded-box bg-base-200 px-3 py-1.5 text-sm">
+							<Flag representation={paper.seconderCommitteeMember.representation} size="xs" />
+							<span class="font-medium">
+								{m.seconder()}:
+								{getTranslatedCountryNameFromAlpha3Code(
+									paper.seconderCommitteeMember.representation.alpha3Code
+								) ?? paper.seconderCommitteeMember.representation.name}
+							</span>
+						</div>
+					{/if}
+					{#if paper.sponsors?.length}
+						<div class="flex items-center gap-2 rounded-box bg-base-200 px-3 py-1.5 text-sm">
+							<i class="fas fa-users text-base-content/60"></i>
+							<span class="font-medium">
+								{m.sponsors()}: {paper.sponsors.length}
+							</span>
+						</div>
+					{/if}
+				</div>
+			{/if}
 			<ResolutionPreview
 				{resolution}
 				{headerData}

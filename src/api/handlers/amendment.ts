@@ -83,7 +83,8 @@ schemaBuilder.mutationFields((t) => ({
 			targetClauseId: t.arg.string(),
 			targetOperativeIndex: t.arg.int(),
 			newContent: t.arg.string(),
-			targetPosition: t.arg.int()
+			targetPosition: t.arg.int(),
+			seconderCommitteeMemberId: t.arg.id()
 		},
 		resolve: async (query, _root, args, ctx) => {
 			const isChair = await db.query.resolutionPaper.findFirst({
@@ -115,11 +116,18 @@ schemaBuilder.mutationFields((t) => ({
 				status = 'PENDING';
 			}
 
+			const paper = await db.query.resolutionPaper
+				.findFirst({ where: { id: args.paperId }, columns: { committeeId: true } })
+				.then(assertFindFirstExists);
+
+			const seconderId = args.seconderCommitteeMemberId ?? null;
+
 			await db.transaction(async (tx) => {
 				await tx.insert(schema.amendment).values({
 					id: args.id,
 					paperId: args.paperId,
 					proposerCommitteeMemberId,
+					seconderCommitteeMemberId: seconderId,
 					type: args.type,
 					status,
 					targetClauseId: args.targetClauseId ?? null,
@@ -132,6 +140,19 @@ schemaBuilder.mutationFields((t) => ({
 					amendmentId: args.id,
 					committeeMemberId: proposerCommitteeMemberId
 				});
+				if (seconderId) {
+					await db.query.committeeMember
+						.findFirst({
+							where: { id: seconderId, committeeId: paper.committeeId },
+							columns: { id: true }
+						})
+						.then(assertFindFirstExists);
+					await tx.insert(schema.amendmentSponsor).values({
+						id: nanoid(),
+						amendmentId: args.id,
+						committeeMemberId: seconderId
+					});
+				}
 			});
 
 			pubsub.created();
@@ -432,6 +453,7 @@ schemaBuilder.mutationFields((t) => ({
 					.then(assertFindFirstExists);
 				update.proposerCommitteeMemberId = member.id;
 			}
+			let newSeconderId: string | null = null;
 			if (args.seconderCommitteeMemberId != null) {
 				const member = await db.query.committeeMember
 					.findFirst({
@@ -442,11 +464,33 @@ schemaBuilder.mutationFields((t) => ({
 						columns: { id: true }
 					})
 					.then(assertFindFirstExists);
+				newSeconderId = member.id;
 				update.seconderCommitteeMemberId = member.id;
 			}
 
 			if (Object.keys(update).length > 0) {
-				await db.update(schema.amendment).set(update).where(updateFilter.sql.where);
+				await db.transaction(async (tx) => {
+					await db.update(schema.amendment).set(update).where(updateFilter.sql.where);
+					if (newSeconderId) {
+						const alreadySponsor = await tx
+							.select()
+							.from(schema.amendmentSponsor)
+							.where(
+								and(
+									eq(schema.amendmentSponsor.amendmentId, args.id),
+									eq(schema.amendmentSponsor.committeeMemberId, newSeconderId)
+								)
+							)
+							.then((rows) => rows.length > 0);
+						if (!alreadySponsor) {
+							await tx.insert(schema.amendmentSponsor).values({
+								id: nanoid(),
+								amendmentId: args.id,
+								committeeMemberId: newSeconderId
+							});
+						}
+					}
+				});
 				pubsub.updated(args.id);
 			}
 

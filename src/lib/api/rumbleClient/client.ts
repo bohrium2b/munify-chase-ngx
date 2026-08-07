@@ -1010,6 +1010,7 @@ export type Mutation = {
     newContent?: String | null | undefined,
     paperId: ID,
     proposerCommitteeMemberId?: ID | null | undefined,
+    seconderCommitteeMemberId?: ID | null | undefined,
     status?: AmendmentstatusEnum | null | undefined,
     targetClauseId?: String | null | undefined,
     targetOperativeIndex?: Int | null | undefined,
