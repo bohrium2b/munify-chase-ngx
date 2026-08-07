@@ -219,7 +219,7 @@
 		<!-- Committee Status Card -->
 		<div class="card bg-base-100 shadow-sm">
 			<div class="card-body gap-2 p-4">
-				<IconInfoBox text={activeAgendaItem?.title ?? '—'} faIcon="podium" />
+				<IconInfoBox text={activeAgendaItem?.title ?? '—'} faIcon="microphone" />
 				<IconInfoBox
 					text={getCommitteeStatusText(committee.status)}
 					faIcon={getCommitteeStatusIcon(committee.status)}

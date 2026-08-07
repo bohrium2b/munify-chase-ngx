@@ -215,7 +215,7 @@
 					<span
 						class="bg-base-100 text-primary grid size-8 place-items-center rounded-lg text-base shadow-sm"
 					>
-						<i class="fa-duotone fa-podium"></i>
+						<i class="fa-duotone fa-ranking-star"></i>
 					</span>
 					<span>MUNify <span class="text-primary">CHASE</span></span>
 				</div>

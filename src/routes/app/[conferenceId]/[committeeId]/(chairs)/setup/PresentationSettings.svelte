@@ -93,7 +93,7 @@
 	<div class="divider"></div>
 	<div class="flex flex-col gap-4">
 		<div class="flex items-center gap-4">
-			<i class="fa-duotone fa-text-size text-2xl"></i>
+			<i class="fa-duotone fa-font text-2xl"></i>
 			<input
 				type="range"
 				min="10"
@@ -101,12 +101,13 @@
 				step="1"
 				bind:value={localRootFontSize}
 				onchange={() =>
-					client.mutate
-						.updateCommittee({
+					toast.promise(
+						client.mutate.updateCommittee({
 							__args: { id: committeeId, presentationRootFontSize: localRootFontSize },
 							id: true
-						})
-						.catch(() => {})}
+						}),
+						promiseToastStrings(m.baseFontSize(), 'update')
+					)}
 				class="range range-primary w-full"
 			/>
 			<span class="w-10 text-center">{localRootFontSize}</span>
@@ -124,15 +125,16 @@
 				step="1"
 				bind:value={localResolutionFontSize}
 				onchange={() =>
-					client.mutate
-						.updateCommittee({
+					toast.promise(
+						client.mutate.updateCommittee({
 							__args: {
 								id: committeeId,
 								presentationResolutionFontSize: localResolutionFontSize
 							},
 							id: true
-						})
-						.catch(() => {})}
+						}),
+						promiseToastStrings(m.resolutionFontSize(), 'update')
+					)}
 				class="range range-primary w-full"
 			/>
 			<span class="w-10 text-center">{localResolutionFontSize}</span>

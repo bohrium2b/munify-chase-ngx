@@ -209,7 +209,7 @@
 						<div class="flex items-start justify-between">
 							<p class="text-base-content/60 text-sm font-medium">{m.formalSpeeches()}</p>
 							<div class="rounded-lg bg-success/10 p-2">
-								<i class="fa-duotone fa-podium text-success text-lg"></i>
+								<i class="fa-duotone fa-microphone text-success text-lg"></i>
 							</div>
 						</div>
 						<p class="font-mono text-3xl font-bold tabular-nums">

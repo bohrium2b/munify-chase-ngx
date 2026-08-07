@@ -24,6 +24,14 @@ COPY . .
 # therefore we need to run the build command BEFORE we check for correctness
 RUN bun run build
 
+FROM ubuntu:22.04 AS typst
+RUN apt-get update && apt-get install -y wget tar xz-utils
+WORKDIR /tmp
+
+RUN wget https://github.com/typst/typst/releases/download/v0.10.0/typst-x86_64-unknown-linux-musl.tar.xz -O typst-x86_64-unknown-linux-musl.tar.xz && \
+    tar -xf typst-x86_64-unknown-linux-musl.tar.xz && \ 
+    mv typst-x86_64-unknown-linux-musl/typst /usr/local/bin/
+
 FROM node:lts-slim AS release
 WORKDIR /app/release
 
@@ -44,6 +52,8 @@ COPY ./drizzle.config.ts .
 COPY ./src/api/db/schema.ts ./src/api/db/schema.ts
 COPY --from=runtime-dependencies /build/dependencies .
 COPY ./src/server.js ./server.js
+
+COPY --from=typst /usr/local/bin/typst /usr/local/bin/typst
 
 RUN chown -R node:node .
 USER node

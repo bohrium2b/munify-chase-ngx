@@ -16,6 +16,7 @@
 	import { openVotingModal, type VotingResult } from '$lib/components/voting/votingModal';
 	import AmendmentSponsorPanel from './AmendmentSponsorPanel.svelte';
 	import AmendmentReviewPanel from './AmendmentReviewPanel.svelte';
+	import EditProposerSeconderModal from './EditProposerSeconderModal.svelte';
 	import AiSpinner from '$lib/components/AiSpinner.svelte';
 	import AiIcon from '$lib/components/AiIcon.svelte';
 	import { slide } from 'svelte/transition';
@@ -160,6 +161,7 @@
 			id: true,
 			representation: { name: true, alpha2Code: true, alpha3Code: true, faIcon: true, type: true }
 		},
+		seconderCommitteeMemberId: true,
 		sponsors: { id: true, amendmentId: true, committeeMember: { id: true } }
 	});
 
@@ -254,6 +256,7 @@
 	}
 
 	let busyId = $state<string | null>(null);
+	let editProposerSeconderAmendmentId = $state<string | null>(null);
 
 	async function run(id: string, fn: () => Promise<unknown>, successMsg?: string) {
 		busyId = id;
@@ -503,6 +506,15 @@
 								m.unknown()}</span
 						>
 						<span class="text-base-content/40">·</span>
+						{#if team}
+							<button
+								class="btn btn-xs btn-ghost -my-1 -ml-1 gap-1"
+								onclick={() => (editProposerSeconderAmendmentId = a.id)}
+								title={m.editProposerSeconder()}
+							>
+								<i class="fas fa-user-pen text-[0.6rem]"></i>
+							</button>
+						{/if}
 						<button
 							class="btn btn-xs btn-ghost -my-1 -ml-1 gap-1"
 							class:text-warning={!canSubmit && a.status === 'PENDING'}
@@ -715,4 +727,19 @@
 
 {#if activeGroup}
 	<AmendmentReviewPanel items={activeGroup.items} onclose={() => (activeTrigger = null)} />
+{/if}
+
+{#if editProposerSeconderAmendmentId}
+	{@const amendment = scoped.find((a) => a.id === editProposerSeconderAmendmentId)}
+	{#if amendment}
+		<EditProposerSeconderModal
+			bind:open={editProposerSeconderAmendmentId}
+			close={() => (editProposerSeconderAmendmentId = null)}
+			kind="amendment"
+			id={amendment.id}
+			{committeeId}
+			currentProposerId={amendment.proposer?.id ?? null}
+			currentSeconderId={amendment.seconderCommitteeMemberId ?? null}
+		/>
+	{/if}
 {/if}

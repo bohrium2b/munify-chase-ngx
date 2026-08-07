@@ -36,8 +36,7 @@
 <div class="relative h-10 w-10 text-2xl">
 	{#if status === 'active'}
 		<div class="absolute inset-0 flex items-center justify-center">
-			<i class="fa-duotone {activeIcon}" in:blur={{ duration: 500 }} out:blur={{ duration: 500 }}
-			></i>
+			<i class="fa-solid {activeIcon}" in:blur={{ duration: 500 }} out:blur={{ duration: 500 }}></i>
 		</div>
 	{:else if status === 'paused'}
 		<div class="absolute inset-0 flex items-center justify-center">

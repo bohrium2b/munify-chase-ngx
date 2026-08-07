@@ -104,8 +104,12 @@
 	};
 
 	let proposerValue = $state('');
+	let seconderValue = $state('');
 	const selectedMember = $derived(
 		(members ?? []).find((mem) => getMemberName(mem) === proposerValue) ?? null
+	);
+	const selectedSeconder = $derived(
+		(members ?? []).find((mem) => getMemberName(mem) === seconderValue) ?? null
 	);
 
 	let type = $state<AmendmentType>('ALTER_TEXT');
@@ -184,18 +188,17 @@
 						: undefined,
 					newContent: needsContent ? newContent : undefined,
 					targetPosition: needsPosition ? (targetPosition ?? -1) : undefined,
-					proposerCommitteeMemberId: team ? (selectedMember?.id ?? undefined) : undefined
+					proposerCommitteeMemberId: team ? (selectedMember?.id ?? undefined) : undefined,
+					seconderCommitteeMemberId: team ? (selectedSeconder?.id ?? undefined) : undefined
 				},
 				id: true
 			});
 			toast.success(m.amendmentCreated());
 			newContent = '';
 			proposerValue = '';
+			seconderValue = '';
 			close();
 		} catch (err) {
-			// Network errors mean the request was queued for offline sync — the
-			// optimistic update is already visible in the list, so close the dialog
-			// and show the normal success message.
 			if (
 				err &&
 				typeof err === 'object' &&
@@ -205,6 +208,7 @@
 				toast.success(m.amendmentCreated());
 				newContent = '';
 				proposerValue = '';
+				seconderValue = '';
 				close();
 			} else {
 				toast.error(err instanceof Error ? err.message : 'Failed to create amendment');
@@ -266,6 +270,41 @@
 					{:else}
 						<Combobox
 							bind:value={proposerValue}
+							options={members ?? []}
+							filter={filterMembers}
+							getStringValue={getMemberName}
+							getKey={(mem) => mem.id}
+							placeholder={m.selectMember()}
+							triggerClass="input-lg join-item flex items-center justify-center px-3 text-base-content/40 hover:text-base-content transition-colors"
+						>
+							{#snippet ListItem(option)}
+								<Flag size="xs" representation={option.representation} />
+								<span class="ml-2 flex-1">{getMemberName(option)}</span>
+							{/snippet}
+						</Combobox>
+					{/if}
+				</div>
+			{/if}
+
+			<!-- Chair: seconder picker -->
+			{#if team}
+				<div class="flex flex-col gap-1">
+					<span class="label-text text-sm font-medium">{m.seconder()}</span>
+					{#if selectedSeconder}
+						<div class="bg-base-100 flex items-center gap-2 rounded-lg px-3 py-2">
+							<Flag representation={selectedSeconder.representation} size="xs" />
+							<span class="flex-1 text-sm font-medium">{getMemberName(selectedSeconder)}</span>
+							<button
+								class="btn btn-ghost btn-xs btn-circle"
+								aria-label={m.deselect()}
+								onclick={() => (seconderValue = '')}
+							>
+								<i class="fas fa-xmark text-xs"></i>
+							</button>
+						</div>
+					{:else}
+						<Combobox
+							bind:value={seconderValue}
 							options={members ?? []}
 							filter={filterMembers}
 							getStringValue={getMemberName}

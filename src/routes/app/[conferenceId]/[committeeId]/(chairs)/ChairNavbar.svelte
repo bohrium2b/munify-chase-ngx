@@ -52,14 +52,37 @@
 		| null
 		| undefined;
 
+	type MemberLike = {
+		id: string;
+		present?: boolean;
+		representation?: {
+			name?: string | null;
+			alpha2Code?: string | null;
+			alpha3Code?: string | null;
+			faIcon?: string | null;
+			type?: string | null;
+		} | null;
+	};
+
 	interface Props {
 		title?: string;
 		conferenceTitle?: string | null;
 		speakersList?: SpeakersList;
 		commentList?: SpeakersList;
+		committeeMembers?: MemberLike[];
+		conferenceMembers?: MemberLike[];
+		committees?: Array<{ id: string; name: string; abbreviation: string }>;
 	}
 
-	let { title, conferenceTitle, speakersList, commentList }: Props = $props();
+	let {
+		title,
+		conferenceTitle,
+		speakersList,
+		commentList,
+		committeeMembers = [],
+		conferenceMembers = [],
+		committees = []
+	}: Props = $props();
 
 	const conferenceId = $derived(page.params.conferenceId!);
 	const committeeId = $derived(page.params.committeeId!);
@@ -84,16 +107,6 @@
 	});
 
 	let role = $derived(conferenceUsers?.[0]?.conferenceUserType);
-
-	const conference = await client.liveQuery.conference({
-		__args: { id: page.params.conferenceId! },
-		id: true,
-		committees: {
-			id: true,
-			name: true,
-			abbreviation: true
-		}
-	});
 
 	const isGlobalAdmin = await client.query.isGlobalAdmin();
 
@@ -156,7 +169,7 @@
 
 	{#if !page.route.id?.includes('speakers-list') && speakersList}
 		<div class="absolute left-1/2 -translate-x-1/2">
-			<NavbarSpeakersWidget {speakersList} {commentList} />
+			<NavbarSpeakersWidget {speakersList} {commentList} {committeeMembers} {conferenceMembers} />
 		</div>
 	{/if}
 
@@ -177,7 +190,7 @@
 			roleBadgeClass={roleBadgeClassFor(role)}
 			{conferenceTitle}
 			{conferenceId}
-			committees={role === 'ADMIN' || role === 'TEAM' ? (conference?.committees ?? []) : []}
+			committees={role === 'ADMIN' || role === 'TEAM' ? committees : []}
 			dashboardHref="/app"
 			signOutHref="/logout"
 		/>

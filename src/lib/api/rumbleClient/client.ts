@@ -91,6 +91,11 @@ export type Amendment = {
     orderBy?: AmendmentreviewitemOrderInputArgument | null | undefined,
     where?: AmendmentreviewitemWhereInputArgument | null | undefined
   }) => Amendmentreviewitem[],
+  seconderCommitteeMember: (p?: {
+    orderBy?: CommitteememberOrderInputArgument | null | undefined,
+    where?: CommitteememberWhereInputArgument | null | undefined
+  }) => Committeemember | null,
+  seconderCommitteeMemberId: ID | null,
   sponsors: (p?: {
     limit?: Int | null | undefined,
     offset?: Int | null | undefined,
@@ -126,6 +131,8 @@ export type AmendmentOrderInputArgument = {
   proposer?: CommitteememberOrderInputArgument | null | undefined,
   proposerCommitteeMemberId?: SortingParameter | null | undefined,
   reviewItemsAsSubject?: AmendmentreviewitemOrderInputArgument | null | undefined,
+  seconderCommitteeMember?: CommitteememberOrderInputArgument | null | undefined,
+  seconderCommitteeMemberId?: SortingParameter | null | undefined,
   sponsors?: AmendmentsponsorOrderInputArgument | null | undefined,
   status?: SortingParameter | null | undefined,
   targetClauseId?: SortingParameter | null | undefined,
@@ -148,6 +155,8 @@ export type AmendmentWhereInputArgument = {
   proposer?: CommitteememberWhereInputArgument | null | undefined,
   proposerCommitteeMemberId?: ID | null | undefined,
   reviewItemsAsSubject?: AmendmentreviewitemWhereInputArgument | null | undefined,
+  seconderCommitteeMember?: CommitteememberWhereInputArgument | null | undefined,
+  seconderCommitteeMemberId?: ID | null | undefined,
   sponsors?: AmendmentsponsorWhereInputArgument | null | undefined,
   status?: AmendmentstatusEnum | null | undefined,
   targetClauseId?: ID | null | undefined,
@@ -1007,6 +1016,7 @@ export type Mutation = {
     newContent?: String | null | undefined,
     paperId: ID,
     proposerCommitteeMemberId?: ID | null | undefined,
+    seconderCommitteeMemberId?: ID | null | undefined,
     status?: AmendmentstatusEnum | null | undefined,
     targetClauseId?: String | null | undefined,
     targetOperativeIndex?: Int | null | undefined,
@@ -1218,6 +1228,11 @@ export type Mutation = {
     clauseId: String,
     paperId: ID
   }) => Boolean,
+  updateAmendment: (p: {
+    id: ID,
+    proposerCommitteeMemberId?: ID | null | undefined,
+    seconderCommitteeMemberId?: ID | null | undefined
+  }) => Amendment,
   updateAmendmentReviewItem: (p: {
     aiObsolete?: Boolean | null | undefined,
     aiObsoleteReason?: String | null | undefined,
@@ -1274,9 +1289,11 @@ export type Mutation = {
     id: ID
   }) => Resolutioncomment,
   updateResolutionPaper: (p: {
+    creatorCommitteeMemberId?: ID | null | undefined,
     deployConfetti?: Boolean | null | undefined,
     documentNumber?: String | null | undefined,
     id: ID,
+    seconderCommitteeMemberId?: ID | null | undefined,
     status?: PaperstatusEnum | null | undefined,
     title?: String | null | undefined
   }) => Resolutionpaper,
@@ -2000,6 +2017,11 @@ export type Resolutionpaper = {
     orderBy?: OperativeclausevoteOrderInputArgument | null | undefined,
     where?: OperativeclausevoteWhereInputArgument | null | undefined
   }) => Operativeclausevote[],
+  seconderCommitteeMember: (p?: {
+    orderBy?: CommitteememberOrderInputArgument | null | undefined,
+    where?: CommitteememberWhereInputArgument | null | undefined
+  }) => Committeemember | null,
+  seconderCommitteeMemberId: ID | null,
   shareCodes: (p?: {
     limit?: Int | null | undefined,
     offset?: Int | null | undefined,
@@ -2042,6 +2064,8 @@ export type ResolutionpaperOrderInputArgument = {
   editors?: PapereditorOrderInputArgument | null | undefined,
   id?: SortingParameter | null | undefined,
   operativeClauseVotes?: OperativeclausevoteOrderInputArgument | null | undefined,
+  seconderCommitteeMember?: CommitteememberOrderInputArgument | null | undefined,
+  seconderCommitteeMemberId?: SortingParameter | null | undefined,
   shareCodes?: PapersharecodeOrderInputArgument | null | undefined,
   snapshots?: PapercontentsnapshotOrderInputArgument | null | undefined,
   sponsors?: PapersponsorOrderInputArgument | null | undefined,
@@ -2066,6 +2090,8 @@ export type ResolutionpaperWhereInputArgument = {
   editors?: PapereditorWhereInputArgument | null | undefined,
   id?: ID | null | undefined,
   operativeClauseVotes?: OperativeclausevoteWhereInputArgument | null | undefined,
+  seconderCommitteeMember?: CommitteememberWhereInputArgument | null | undefined,
+  seconderCommitteeMemberId?: ID | null | undefined,
   shareCodes?: PapersharecodeWhereInputArgument | null | undefined,
   snapshots?: PapercontentsnapshotWhereInputArgument | null | undefined,
   sponsors?: PapersponsorWhereInputArgument | null | undefined,

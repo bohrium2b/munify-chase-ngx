@@ -1,3 +1,4 @@
+<!-- eslint-disable @typescript-eslint/no-explicit-any -->
 <script lang="ts">
 	import { type Snippet } from 'svelte';
 	import { goto } from '$app/navigation';
@@ -15,8 +16,17 @@
 	import { getServerTime } from '$lib/state/serverTime.svelte';
 	import hotkeys from 'hotkeys-js';
 	import VotingModal from '$lib/components/voting/VotingModal.svelte';
+	import { type CommitteeWithRelations } from '$lib/types/committee';
 	import AdoptionConfetti from '$lib/components/AdoptionConfetti.svelte';
 	import { openPresentationWindow } from '$lib/state/presentationWindow.svelte';
+
+	// Inline tab components — kept as separate files so each tab's data
+	// subscriptions stay isolated and the code stays navigable.
+	import SetupTab from './tabs/SetupTab.svelte';
+	import PresenceTab from './tabs/PresenceTab.svelte';
+	import SpeakersListTab from './tabs/SpeakersListTab.svelte';
+	import VotingTab from './tabs/VotingTab.svelte';
+	import ResolutionsTab from './tabs/ResolutionsTab.svelte';
 
 	interface Props {
 		children: Snippet;
@@ -27,7 +37,10 @@
 	const committeeId = page.params.committeeId!;
 	const conferenceId = page.params.conferenceId!;
 
-	const committee = await client.liveQuery.committee({
+	// Shared committee query — covers every field needed by all five tabs,
+	// so no tab needs to re-query committee data. Reactive liveQuery proxy
+	// auto-updates all tabs via WebSocket subscriptions.
+	const committee: CommitteeWithRelations = await client.liveQuery.committee({
 		__args: { id: committeeId },
 		id: true,
 		abbreviation: true,
@@ -42,6 +55,9 @@
 		twoThirdsMajority: true,
 		whiteboardContent: true,
 		allowDelegationsToAddThemselvesToSpeakersList: true,
+		amendmentSubmissionOpen: true,
+		amendmentSponsoringOpen: true,
+		supportReevaluationOpen: true,
 		activeAgendaItem: {
 			id: true,
 			title: true,
@@ -53,9 +69,18 @@
 				startTimestamp: true,
 				timeLeft: true,
 				phase: true,
+				agendaItem: {
+					id: true,
+					committee: {
+						id: true,
+						allowDelegationsToAddThemselvesToSpeakersList: true,
+						conferenceId: true
+					}
+				},
 				speakers: {
 					id: true,
 					position: true,
+					speakersListId: true,
 					overwriteName: true,
 					committeeMember: {
 						id: true,
@@ -85,6 +110,19 @@
 				}
 			}
 		},
+		activeRollCallSession: {
+			id: true,
+			currentMemberIndex: true,
+			committeeId: true
+		},
+		activeVotingSession: {
+			id: true,
+			mode: true,
+			voteName: true,
+			majority: true,
+			withAbstentions: true,
+			deviceVotingWindowSeconds: true
+		},
 		agendaItems: {
 			id: true,
 			title: true
@@ -107,12 +145,18 @@
 			id: true,
 			title: true,
 			hasModeratedCaucus: true,
+			committees: {
+				id: true,
+				name: true,
+				abbreviation: true
+			},
 			uniqueConferenceMembers: {
 				id: true,
 				representation: {
 					id: true,
 					type: true,
 					name: true,
+					regionalGroup: true,
 					alpha2Code: true,
 					alpha3Code: true,
 					faIcon: true
@@ -121,7 +165,50 @@
 		}
 	});
 
-	const dockItems = $derived([
+	type TabKey = 'setup' | 'presence' | 'speakers-list' | 'voting' | 'resolutions';
+
+	interface TabDef {
+		key: TabKey;
+		icon: string;
+		label: () => string;
+		href: string;
+		component:
+			| typeof SetupTab
+			| typeof PresenceTab
+			| typeof SpeakersListTab
+			| typeof VotingTab
+			| typeof ResolutionsTab;
+	}
+
+	// Determine active tab from current route. Sub-routes like
+	// `resolutions/[paperId]` resolve to the parent `resolutions` tab.
+	function getTabFromRoute(routeId: string | undefined): TabKey {
+		if (!routeId) return 'setup';
+		if (routeId.includes('setup')) return 'setup';
+		if (routeId.includes('presence')) return 'presence';
+		if (routeId.includes('speakers-list')) return 'speakers-list';
+		if (routeId.includes('voting')) return 'voting';
+		if (routeId.includes('resolutions')) return 'resolutions';
+		return 'setup';
+	}
+
+	// Detect sub-routes (e.g. `resolutions/[paperId]`) that should be rendered
+	// by SvelteKit's normal outlet rather than the inline tab shell.
+	const isSubRoute = $derived(page.route.id?.includes('[paperId]') ?? false);
+
+	// Only use inline tabs for the five main chair tabs; fall back to the
+	// normal SvelteKit outlet for any sub-route.
+	const useInlineTabs = $derived(!isSubRoute);
+
+	let activeTab = $state<TabKey>(getTabFromRoute(page.route.id ?? undefined));
+
+	// Sync active tab when navigating via browser back/forward.
+	$effect(() => {
+		const tab = getTabFromRoute(page.route.id ?? undefined);
+		if (tab !== activeTab) activeTab = tab;
+	});
+
+	const dockItems = $derived<TabDef[]>([
 		{
 			icon: 'fa-gears',
 			label: () => m.setup(),
@@ -129,7 +216,8 @@
 				conferenceId,
 				committeeId
 			}),
-			key: 'setup'
+			key: 'setup',
+			component: SetupTab
 		},
 		{
 			icon: 'fa-users',
@@ -138,25 +226,28 @@
 				conferenceId,
 				committeeId
 			}),
-			key: 'presence'
+			key: 'presence',
+			component: PresenceTab
 		},
 		{
-			icon: 'fa-podium',
+			icon: 'fa-users-line',
 			label: () => m.speakersList(),
 			href: resolve('/app/[conferenceId]/[committeeId]/(chairs)/speakers-list', {
 				conferenceId,
 				committeeId
 			}),
-			key: 'speakers-list'
+			key: 'speakers-list',
+			component: SpeakersListTab
 		},
 		{
-			icon: 'fa-box-ballot',
+			icon: 'fa-comments',
 			label: () => m.voting(),
 			href: resolve('/app/[conferenceId]/[committeeId]/(chairs)/voting', {
 				conferenceId,
 				committeeId
 			}),
-			key: 'voting'
+			key: 'voting',
+			component: VotingTab
 		},
 		{
 			icon: 'fa-file-lines',
@@ -165,59 +256,70 @@
 				conferenceId,
 				committeeId
 			}),
-			key: 'resolutions'
+			key: 'resolutions',
+			component: ResolutionsTab
 		}
 	]);
 
+	// Track which tabs have been pre-rendered (mounted at least once). A tab
+	// that has been pre-rendered stays mounted (hidden) so switching to it is
+	// instant — that's the page cache.
+	let preloadedTabs: TabKey[] = $state([]);
+
+	function ensurePreloaded(key: TabKey) {
+		if (!preloadedTabs.includes(key)) {
+			preloadedTabs = [...preloadedTabs, key];
+		}
+	}
+
+	function switchTab(key: TabKey) {
+		if (key === activeTab) return;
+		activeTab = key;
+		// Replace the URL so the back button stays intuitive, but don't
+		// invalidate load data — everything is driven by the shared
+		// liveQuery in this layout.
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
+		goto(dockItems.find((t) => t.key === key)!.href, {
+			replaceState: true,
+			invalidateAll: false
+		});
+	}
+
+	function handleTabHover(key: TabKey) {
+		// Pre-render on first hover so the component mounts and its
+		// liveQuery subscriptions start pulling data into the cache.
+		ensurePreloaded(key);
+	}
+
 	function isActive(key: string) {
-		return page.route.id?.includes(key) ?? false;
+		return activeTab === key;
+	}
+
+	function isDockItemActive(key: TabKey): boolean {
+		if (isActive(key)) {
+			if (key === 'resolutions' && committee?.activeDraftResolutionId) {
+				const paperRoute = resolve(
+					'/app/[conferenceId]/[committeeId]/(chairs)/resolutions/[paperId]',
+					{ conferenceId, committeeId, paperId: committee.activeDraftResolutionId }
+				);
+				return page.url.pathname === paperRoute;
+			}
+			return true;
+		}
+		return false;
 	}
 
 	$effect(() => {
 		hotkeys('alt+1, alt+2, alt+3, alt+4, alt+5', (event, handler) => {
 			event.preventDefault();
-			switch (handler.key) {
-				case 'alt+1':
-					goto(
-						resolve('/app/[conferenceId]/[committeeId]/(chairs)/setup', {
-							conferenceId,
-							committeeId
-						})
-					);
-					break;
-				case 'alt+2':
-					goto(
-						resolve('/app/[conferenceId]/[committeeId]/(chairs)/presence', {
-							conferenceId,
-							committeeId
-						})
-					);
-					break;
-				case 'alt+3':
-					goto(
-						resolve('/app/[conferenceId]/[committeeId]/(chairs)/speakers-list', {
-							conferenceId,
-							committeeId
-						})
-					);
-					break;
-				case 'alt+4':
-					goto(
-						resolve('/app/[conferenceId]/[committeeId]/(chairs)/voting', {
-							conferenceId,
-							committeeId
-						})
-					);
-					break;
-				case 'alt+5':
-					goto(
-						resolve('/app/[conferenceId]/[committeeId]/(chairs)/resolutions', {
-							conferenceId,
-							committeeId
-						})
-					);
-					break;
-			}
+			const map: Record<string, TabKey> = {
+				'alt+1': 'setup',
+				'alt+2': 'presence',
+				'alt+3': 'speakers-list',
+				'alt+4': 'voting',
+				'alt+5': 'resolutions'
+			};
+			switchTab(map[handler.key] ?? 'setup');
 		});
 		return () => hotkeys.unbind('alt+1, alt+2, alt+3, alt+4, alt+5');
 	});
@@ -233,11 +335,20 @@
 	let speakersListOvertimeAlerted = $state(false);
 	let commentListOvertimeAlerted = $state(false);
 
+	let toastInterval: ReturnType<typeof setInterval> | null = null;
+
+	function clearToastInterval() {
+		if (toastInterval !== null) {
+			clearInterval(toastInterval);
+			toastInterval = null;
+		}
+	}
+
 	$effect(() => {
-		// Toast Effect
+		clearToastInterval();
 		if (!committee) return;
 
-		const interval = setInterval(() => {
+		toastInterval = setInterval(() => {
 			if (dayjs(committee.statusUntil).diff(getServerTime()) < 0) {
 				if (!committeeStatusExpiredAlerted) {
 					toast.error(
@@ -261,7 +372,6 @@
 						speakersList.timeLeft <
 					0;
 
-				//	XAND only fire if both are false. Both true can be ignored, case should not happen.
 				if (overtime && speakersListOvertimeAlerted === commentListOvertimeAlerted) {
 					toast.error(m.speakersListOvertime(), {
 						icon: BellIcon
@@ -280,7 +390,7 @@
 				}
 			}
 		}, 1000);
-		return () => clearInterval(interval);
+		return clearToastInterval;
 	});
 
 	$effect(() => {
@@ -307,11 +417,47 @@
 	conferenceTitle={committee?.conference?.title}
 	{speakersList}
 	{commentList}
+	committeeMembers={committee?.members ?? []}
+	conferenceMembers={committee?.conference?.uniqueConferenceMembers ?? []}
+	committees={committee?.conference?.committees ?? []}
 />
 
-<div class="pb-16">
-	{@render children()}
-</div>
+{#if useInlineTabs}
+	<!--
+    Inline tab shell.
+
+    Each tab component is mounted once and then hidden/shown. This gives
+    us three performance properties:
+
+      1. **Optimistic rendering**: switching tabs only toggles `display`,
+         so the new content appears in the next paint — no mount delay.
+      2. **Pre-loading on hover**: the first `mouseenter` on a dock item
+         adds that tab to `preloadedTabs`, which causes Svelte to mount
+         the component. Its `liveQuery` subscriptions start immediately,
+         so by the time the user clicks the tab the data is already in
+         the (IndexedDB-backed) GraphQL cache.
+      3. **Page caching**: once mounted, a tab stays in the DOM forever
+         (just `display:none`). Re-visiting is a single style toggle.
+  -->
+	<div class="pb-16">
+		{#each dockItems as item (item.key)}
+			{#if activeTab === item.key || preloadedTabs.includes(item.key)}
+				{@const Component = item.component}
+				<div
+					style:display={activeTab === item.key ? 'block' : 'none'}
+					aria-hidden={activeTab !== item.key}
+				>
+					<Component {committee} />
+				</div>
+			{/if}
+		{/each}
+	</div>
+{:else}
+	<!-- Sub-route (e.g. resolutions/[paperId]) — let SvelteKit render it. -->
+	<div class="pb-16">
+		{@render children()}
+	</div>
+{/if}
 
 <StatusChangerModal
 	{committeeId}
@@ -334,16 +480,19 @@
 <!-- Bottom dock -->
 <div class="dock dock-md lg:dock-lg md:justify-center md:gap-4">
 	{#each dockItems as item, i (item.key)}
+		{@const itemHref = item.href}
 		<a
-			href={item.href}
-			class="group relative {isActive(item.key) &&
-			!(
-				item.key === 'resolutions' &&
-				committee?.activeDraftResolutionId &&
-				page.url.pathname.includes(committee.activeDraftResolutionId)
-			)
-				? 'dock-active'
-				: ''}"
+			href={itemHref}
+			class="group relative {isDockItemActive(item.key) ? 'dock-active' : ''}"
+			onmouseenter={() => handleTabHover(item.key)}
+			onclick={(e) => {
+				// Intercept dock clicks so we switch tabs client-side instead
+				// of doing a full SvelteKit navigation.
+				if (item.key !== activeTab) {
+					e.preventDefault();
+					switchTab(item.key);
+				}
+			}}
 		>
 			<i class="fa-duotone {item.icon} size-[1.2em]"></i>
 			<span class="dock-label">{item.label()}</span>

@@ -26,6 +26,8 @@
 
 	let { speakersList, type, childList, parentList }: Props = $props();
 
+	let hasSpeakers = $derived((speakersList?.speakers?.length ?? 0) > 0);
+
 	const nextSpeaker = async () => {
 		if (speakersList && speakersList?.speakers.length > 0) {
 			const speaker = speakersList.speakers.toSorted(compareSpeakers)[0];
@@ -51,7 +53,6 @@
 									id: speakersList.id,
 									timeLeft: speakersList.speakingTime,
 									stopTimer: true,
-									// Moving to a new speaker resets the phase for the next speech
 									phase: 'SPEECH'
 								},
 								id: true,
@@ -92,7 +93,6 @@
 							id: speakersList.id,
 							timeLeft: speakersList.speakingTime,
 							stopTimer: true,
-							// Advancing to a new main-list speaker resets the phase for the next speech
 							...(type === 'SPEAKERS_LIST' ? { phase: 'SPEECH' } : {})
 						},
 						id: true,
@@ -101,7 +101,6 @@
 						phase: true
 					})
 				];
-				// When advancing a questioner, put the speakers list back into question phase
 				if (type === 'COMMENT_LIST' && parentList) {
 					ops.push(
 						client.mutate.updateSpeakersList({
@@ -137,8 +136,7 @@
 
 <button
 	class="btn btn-lg flex flex-1 gap-2
-		{(!speakersList?.speakers?.length && 'btn-disabled') ||
-		(type === 'SPEAKERS_LIST' ? 'btn-error' : 'btn-warning')}"
+		{!hasSpeakers ? 'btn-disabled' : type === 'SPEAKERS_LIST' ? 'btn-error' : 'btn-warning'}"
 	onclick={nextSpeaker}
 >
 	<i class="fas fa-diagram-next"></i>

@@ -26,8 +26,8 @@
 	}: Props = $props();
 
 	const categories = $derived([
-		{ id: 'FORMAL' as CommitteestatusEnum, faIcon: 'podium', tooltip: m.formalDebate() },
-		{ id: 'INFORMAL' as CommitteestatusEnum, faIcon: 'messages', tooltip: m.informalCaucus() },
+		{ id: 'FORMAL' as CommitteestatusEnum, faIcon: 'comment', tooltip: m.formalDebate() },
+		{ id: 'INFORMAL' as CommitteestatusEnum, faIcon: 'comments', tooltip: m.informalCaucus() },
 		{ id: 'PAUSE' as CommitteestatusEnum, faIcon: 'mug-saucer', tooltip: m.pause() },
 		{ id: 'SUSPENSION' as CommitteestatusEnum, faIcon: 'forward-step', tooltip: m.suspension() },
 		...(hasModeratedCaucus
@@ -121,7 +121,7 @@
 	</div>
 	<div class="card bg-base-200 flex flex-row items-center gap-2 p-2">
 		<div class="tooltip tooltip-right flex items-center" data-tip={m.minutesFromNow()}>
-			<i class="fa-duotone fa-timer w-8 text-center text-2xl"></i>
+			<i class="fa-duotone fa-stopwatch w-8 text-center text-2xl"></i>
 		</div>
 		<div class="grid flex-1 grid-cols-4 items-center gap-1 md:grid-cols-5 lg:grid-cols-7">
 			{#each relativeTimes as time (time)}

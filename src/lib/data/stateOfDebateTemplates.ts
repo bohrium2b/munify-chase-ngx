@@ -1,14 +1,14 @@
 const stateOfDebateTemplates: string[] = [
-	'Allgemeine Debatte',
-	'Vorstellung der Resolutionsentwürfe',
-	'Debatte über die Resolutionsentwürfe',
-	'Debatte zum Resolutionsentwurf',
-	'Debatte zum Operativen Absatz',
-	'Debatte zum Änderungsantrag',
-	'Finale Debatte zum Resolutionsentwurf',
-	'Abstimmung über jeden Operativen Absatz',
-	'Abstimmung über den Resolutionsentwurf',
-	'Pro- und Contra-Reden des vorlegenden Gremiums'
+	'General Debate',
+	'Introduction of Draft Resolutions',
+	'Debate on Draft Resolutions',
+	'Debate on the Draft Resolution',
+	'Debate on the Operative Clauses',
+	'Debate on the Amendment',
+	'Substantive Debate',
+	'Voting Clause-by-Clause',
+	'Voting on the Draft Resolution',
+	'Speeches in Favor / Against'
 ];
 
 export default stateOfDebateTemplates;
