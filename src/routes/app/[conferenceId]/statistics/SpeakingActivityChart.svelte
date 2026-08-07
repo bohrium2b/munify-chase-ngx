@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
+	import { getChartColors, type ChartColors } from '$lib/utils/chartColors';
+	import type { Chart } from 'chart.js';
 
 	export interface TimelineBucket {
 		bucket: string;
@@ -12,6 +13,7 @@
 	let { buckets }: Props = $props();
 
 	let canvas: HTMLCanvasElement | undefined = $state();
+	let chartColors: ChartColors | null = $state(null);
 
 	$effect(() => {
 		if (typeof window === 'undefined' || !canvas || buckets.length === 0) return;
@@ -19,20 +21,10 @@
 		let localChart: import('chart.js').Chart | undefined;
 
 		(async () => {
-			const { Chart } = await import('chart.js/auto');
-			if (destroyed || !canvas) return;
+			chartColors = await getChartColors();
+			if (destroyed || !canvas || !chartColors) return;
 
-			const el = Object.assign(document.createElement('div'), {
-				className: 'text-primary bg-transparent',
-				style: 'position:absolute;visibility:hidden'
-			});
-			document.body.appendChild(el);
-			const primaryColor = getComputedStyle(el).color;
-			el.className = 'text-base-content/20 bg-transparent';
-			const gridColor = getComputedStyle(el).color;
-			el.className = 'text-base-content/60 bg-transparent';
-			const labelColor = getComputedStyle(el).color;
-			el.remove();
+			const { primary, grid, label } = chartColors;
 
 			localChart = new Chart(canvas, {
 				type: 'line',
@@ -52,8 +44,8 @@
 						{
 							label: '',
 							data: buckets.map((b) => Math.round(b.totalSeconds / 60)),
-							borderColor: primaryColor,
-							backgroundColor: primaryColor.replace('rgb', 'rgba').replace(')', ', 0.12)'),
+							borderColor: primary,
+							backgroundColor: primary.replace('rgb', 'rgba').replace(')', ', 0.12)'),
 							borderWidth: 2,
 							pointRadius: buckets.length > 100 ? 0 : 3,
 							pointHoverRadius: 5,
@@ -82,24 +74,24 @@
 					},
 					scales: {
 						x: {
-							grid: { color: gridColor },
+							grid: { color: grid },
 							ticks: {
-								color: labelColor,
+								color: label,
 								maxTicksLimit: 12,
 								maxRotation: 45
 							}
 						},
 						y: {
-							grid: { color: gridColor },
+							grid: { color: grid },
 							ticks: {
-								color: labelColor,
+								color: label,
 								callback: (v) => `${v}m`
 							},
 							beginAtZero: true,
 							title: {
 								display: true,
 								text: 'Speaking time (min)',
-								color: labelColor
+								color: label
 							}
 						}
 					}
@@ -112,8 +104,6 @@
 			localChart?.destroy();
 		};
 	});
-
-	onDestroy(() => {});
 </script>
 
 {#if buckets.length === 0}

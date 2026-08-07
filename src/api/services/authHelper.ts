@@ -5,9 +5,13 @@ import { GraphQLError } from 'graphql';
 export function isAdminEmail(email: string) {
 	const whitelistEmails = configPrivate.ADMIN_EMAIL_WHITELIST.split(',').filter(Boolean);
 	const whitelistDomains = configPrivate.ADMIN_DOMAIN_WHITELIST.split(',').filter(Boolean);
-	const domain = email.split('@')[1];
+	const parts = email.split('@');
+	if (parts.length !== 2) return false;
+	const domain = parts[1];
 
-	return whitelistEmails.includes(email) || whitelistDomains.includes(domain);
+	return (
+		whitelistEmails.includes(email.toLowerCase()) || whitelistDomains.includes(domain.toLowerCase())
+	);
 }
 
 export function isGlobalAdmin(ctx: Context) {

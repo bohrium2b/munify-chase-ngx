@@ -18,6 +18,81 @@ import { assertFindFirstExists, assertFirstEntryExists } from '@m1212e/rumble';
 import { emailValidation } from '$api/services/emailValidation';
 import { attendanceCode as generateAttendanceCode } from '$lib/helpers/attendanceCode';
 import { nanoidValidation } from '$lib/helpers/nanoid';
+import { sql } from 'drizzle-orm';
+
+// ---------------------------------------------------------------------------
+// Batched presence lookup
+// ---------------------------------------------------------------------------
+// The three computed fields below (isCheckedIn, currentCommitteeId,
+// currentCheckedInSince) all need the latest presenceEvent per conferenceUser.
+// Naively each resolve fires its own query → N+1 on any list. We batch IDs
+// collected within a single microtask and resolve all pending lookups with
+// one DISTINCT ON query.
+
+interface PresenceSnapshot {
+	isCheckedIn: boolean;
+	currentCommitteeId: string | null;
+	currentCheckedInSince: Date | null;
+}
+
+const pendingPresenceIds = new Set<string>();
+let presenceBatchPromise: Promise<Map<string, PresenceSnapshot>> | null = null;
+
+async function batchLatestPresence(conferenceUserId: string): Promise<PresenceSnapshot> {
+	pendingPresenceIds.add(conferenceUserId);
+
+	if (!presenceBatchPromise) {
+		presenceBatchPromise = (async (): Promise<Map<string, PresenceSnapshot>> => {
+			const ids = Array.from(pendingPresenceIds);
+			pendingPresenceIds.clear();
+
+			if (ids.length === 0) {
+				return new Map();
+			}
+
+			const rows = await db.execute(sql`
+				SELECT DISTINCT ON (pe.conference_user_id)
+					pe.conference_user_id,
+					pe.present,
+					pe.committee_id,
+					pe.timestamp
+				FROM presence_event pe
+				WHERE pe.conference_user_id IN (${sql.join(
+					ids.map((id) => sql`${id}`),
+					sql`, `
+				)})
+				ORDER BY pe.conference_user_id, pe.timestamp DESC
+			`);
+
+			const result = new Map<string, PresenceSnapshot>();
+			for (const row of rows.rows) {
+				const r = row as {
+					conference_user_id: string;
+					present: boolean;
+					committee_id: string | null;
+					timestamp: Date | null;
+				};
+				result.set(r.conference_user_id, {
+					isCheckedIn: r.present,
+					currentCommitteeId: r.present ? r.committee_id : null,
+					currentCheckedInSince: r.present ? r.timestamp : null
+				});
+			}
+			return result;
+		})();
+	}
+
+	const batch = await presenceBatchPromise;
+	presenceBatchPromise = null;
+
+	return (
+		batch.get(conferenceUserId) ?? {
+			isCheckedIn: false,
+			currentCommitteeId: null,
+			currentCheckedInSince: null
+		}
+	);
+}
 
 abilityBuilder.conferenceUser.allow('read').when((ctx) => {
 	return {
@@ -131,32 +206,23 @@ export const ConferenceUserRef = object({
 		// query in presenceEvent.ts is provided for live overview tabs.
 		isCheckedIn: t.boolean({
 			resolve: async (parent) => {
-				const latest = await db.query.presenceEvent.findFirst({
-					where: { conferenceUserId: parent.id },
-					orderBy: { timestamp: 'desc' }
-				});
-				return latest?.present ?? false;
+				const snapshot = await batchLatestPresence(parent.id);
+				return snapshot.isCheckedIn;
 			}
 		}),
 		currentCommitteeId: t.string({
 			nullable: true,
 			resolve: async (parent) => {
-				const latest = await db.query.presenceEvent.findFirst({
-					where: { conferenceUserId: parent.id },
-					orderBy: { timestamp: 'desc' }
-				});
-				return latest?.present ? latest.committeeId : null;
+				const snapshot = await batchLatestPresence(parent.id);
+				return snapshot.currentCommitteeId;
 			}
 		}),
 		currentCheckedInSince: t.field({
 			type: 'DateTime',
 			nullable: true,
 			resolve: async (parent) => {
-				const latest = await db.query.presenceEvent.findFirst({
-					where: { conferenceUserId: parent.id },
-					orderBy: { timestamp: 'desc' }
-				});
-				return latest?.present ? latest.timestamp : null;
+				const snapshot = await batchLatestPresence(parent.id);
+				return snapshot.currentCheckedInSince;
 			}
 		})
 	})

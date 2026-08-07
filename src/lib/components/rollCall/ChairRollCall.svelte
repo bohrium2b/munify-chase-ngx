@@ -58,15 +58,17 @@
 		const id = member.id;
 		if (inFlight.has(id)) return;
 		inFlight.add(id);
-		setTimeout(() => inFlight.delete(id), 600);
 
-		client.mutate
+		const mutationPromise = client.mutate
 			.setPresenceForCommitteeMembers({
 				__args: { ids: [id], present, rollCallSessionId: sessionId },
 				id: true,
 				present: true
 			})
 			.catch(() => {});
+
+		mutationPromise.finally(() => inFlight.delete(id));
+		setTimeout(() => inFlight.delete(id), 5000);
 
 		if (currentIndex === members.length - 1) {
 			toast.success(m.rollCallSuccess());

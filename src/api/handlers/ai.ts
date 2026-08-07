@@ -96,7 +96,7 @@ schemaBuilder.queryFields((t) => ({
 			await requireChairAccess(ctx);
 			if (!isGlobalAdmin(ctx)) {
 				const user = ctx.mustBeLoggedIn();
-				if (user.email) checkRateLimit(user.email);
+				if (user.sub) checkRateLimit(user.sub);
 			}
 
 			const result = await makeAICall({

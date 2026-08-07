@@ -462,25 +462,13 @@ schemaBuilder.mutationFields((t) => {
 							.returning()
 							.then(assertFirstEntryExists);
 
-						// Shift positions down
-						const aboutToBeShiftedDown = await tx.query.speakerOnList.findMany({
-							where: {
-								speakersListId: deleted.speakersListId,
-								position: {
-									gt: deleted.position
-								}
-							},
-							orderBy: { position: 'asc' }
-						});
-
-						for (const speaker of aboutToBeShiftedDown) {
-							await tx
-								.update(schema.speakerOnList)
-								.set({
-									position: sql`${schema.speakerOnList.position} - 1`
-								})
-								.where(eq(schema.speakerOnList.id, speaker.id));
-						}
+						// Shift positions down with a single UPDATE instead of N sequential queries
+						await tx.execute(sql`
+						UPDATE speaker_on_list
+						SET position = position - 1
+						WHERE speakers_list_id = ${deleted.speakersListId}
+						  AND position > ${deleted.position}
+					`);
 
 						return deleted;
 					},
@@ -566,20 +554,20 @@ schemaBuilder.mutationFields((t) => {
 										}
 									]
 								},
-								orderBy: {
-									position: 'asc'
-								}
+								columns: { id: true }
 							});
 
-							for (const entry of toUpdate) {
-								await tx
-									.update(schema.speakerOnList)
-									.set({
-										position: sql`${schema.speakerOnList.position} - 1`
-									})
-									.where(eq(schema.speakerOnList.id, entry.id));
-
-								updatedEntityIds.push(entry.id);
+							if (toUpdate.length > 0) {
+								await tx.execute(sql`
+								UPDATE speaker_on_list
+								SET position = position - 1
+								WHERE speakers_list_id = ${aboutToMoveSpeakerOnList.speakersListId}
+								  AND position > ${aboutToMoveSpeakerOnList.position}
+								  AND position <= ${targetPosition}
+							`);
+								for (const entry of toUpdate) {
+									updatedEntityIds.push(entry.id);
+								}
 							}
 						} else if (targetPosition < aboutToMoveSpeakerOnList.position) {
 							const toUpdate = await tx.query.speakerOnList.findMany({
@@ -596,20 +584,20 @@ schemaBuilder.mutationFields((t) => {
 										}
 									]
 								},
-								orderBy: {
-									position: 'desc'
-								}
+								columns: { id: true }
 							});
 
-							for (const entry of toUpdate) {
-								await tx
-									.update(schema.speakerOnList)
-									.set({
-										position: sql`${schema.speakerOnList.position} + 1`
-									})
-									.where(eq(schema.speakerOnList.id, entry.id));
-
-								updatedEntityIds.push(entry.id);
+							if (toUpdate.length > 0) {
+								await tx.execute(sql`
+								UPDATE speaker_on_list
+								SET position = position + 1
+								WHERE speakers_list_id = ${aboutToMoveSpeakerOnList.speakersListId}
+								  AND position < ${aboutToMoveSpeakerOnList.position}
+								  AND position >= ${targetPosition}
+							`);
+								for (const entry of toUpdate) {
+									updatedEntityIds.push(entry.id);
+								}
 							}
 						}
 

@@ -205,6 +205,9 @@
 		if (committee?.presentationRootFontSize) {
 			document.documentElement.style.fontSize = `${committee.presentationRootFontSize}px`;
 		}
+		return () => {
+			document.documentElement.style.fontSize = '';
+		};
 	});
 
 	$effect(() => {
