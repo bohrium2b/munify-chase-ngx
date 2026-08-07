@@ -5,7 +5,7 @@ on:
   push:
     branches: [main]
     tags: ['*']
-  workflow_dispatch: 
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -13,16 +13,16 @@ concurrency:
 
 jobs:
   build:
-      runs-on: ubuntu-latest
-      env:
-        NODE_OPTIONS: '--max-old-space-size=8192'
-      steps:
-        - uses: actions/checkout@v6
-        - uses: ./.github/actions/setup-bun
-        - run: bunx svelte-kit sync
-        - run: bunx @inlang/paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide
-        # - run: bunx houdini generate # TODO
-        - run: bun run build
+    runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: '--max-old-space-size=8192'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-bun
+      - run: bunx svelte-kit sync
+      - run: bunx @inlang/paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide
+      # - run: bunx houdini generate # TODO
+      - run: bun run build
 
   native-client-build:
     environment: production
@@ -52,7 +52,7 @@ jobs:
         run: |
           git remote add upstream https://github.com/DeutscheModelUnitedNations/munify-chase.git
           git fetch upstream native-client:native-client
-          git checkout -B native-client upstream/native-client
+          git checkout -B native-client origin/native-client
       - uses: ./.github/actions/setup-bun
 
       - name: Install Rust stable
@@ -86,5 +86,3 @@ jobs:
           prerelease: true
           args: ${{ matrix.args }}
           releaseName: 'Munify Chase Test'
-          
-          
