@@ -8,53 +8,74 @@
 	import hotkeys from 'hotkeys-js';
 	import Kbd from '$lib/components/Kbd.svelte';
 	import { compareSpeakers } from '$lib/helpers/speakerSort';
+	import { latchWhileDisconnected } from '$lib/state/connection.svelte';
+	import Popover from '$lib/components/Popover.svelte';
+	import toast from 'svelte-french-toast';
+	import { promiseToastStrings } from '$lib/utils/toast';
+	import { nanoid } from '$lib/helpers/nanoid';
 
-	type SpeakersList =
-		| {
+	type SpeakersList = {
+		id: string;
+		type: string;
+		speakingTime: number;
+		startTimestamp?: Date | null;
+		timeLeft: number;
+		phase?: string | null;
+		speakers: Array<{
+			id: string;
+			position: number;
+			overwriteName?: string | null;
+			committeeMember?: {
 				id: string;
-				type: string;
-				speakingTime: number;
-				startTimestamp?: Date | null;
-				timeLeft: number;
-				phase?: string | null;
-				speakers: Array<{
-					id: string;
-					position: number;
-					overwriteName?: string | null;
-					committeeMember?: {
-						id: string;
-						representation?: {
-							name?: string | null;
-							alpha2Code?: string | null;
-							alpha3Code?: string | null;
-							faIcon?: string | null;
-							type?: string | null;
-						} | null;
-					} | null;
-					conferenceMember?: {
-						id: string;
-						representation?: {
-							name?: string | null;
-							alpha2Code?: string | null;
-							alpha3Code?: string | null;
-							faIcon?: string | null;
-							type?: string | null;
-						} | null;
-					} | null;
-				}>;
-		  }
-		| null
-		| undefined;
+				representation?: {
+					name?: string | null;
+					alpha2Code?: string | null;
+					alpha3Code?: string | null;
+					faIcon?: string | null;
+					type?: string | null;
+				} | null;
+			} | null;
+			conferenceMember?: {
+				id: string;
+				representation?: {
+					name?: string | null;
+					alpha2Code?: string | null;
+					alpha3Code?: string | null;
+					faIcon?: string | null;
+					type?: string | null;
+				} | null;
+			} | null;
+		}>;
+	} | null;
+
+	type MemberLike = {
+		id: string;
+		present?: boolean;
+		representation?: {
+			name?: string | null;
+			alpha2Code?: string | null;
+			alpha3Code?: string | null;
+			faIcon?: string | null;
+			type?: string | null;
+		} | null;
+	};
 
 	interface Props {
 		speakersList?: SpeakersList;
 		commentList?: SpeakersList;
+		committeeMembers: MemberLike[];
+		conferenceMembers: MemberLike[];
 	}
 
-	let { speakersList, commentList }: Props = $props();
+	let { speakersList, commentList, committeeMembers, conferenceMembers }: Props = $props();
 
-	let currentSpeaker = $derived(speakersList?.speakers.toSorted(compareSpeakers).at(0));
-	let currentQuestioner = $derived(commentList?.speakers.toSorted(compareSpeakers).at(0));
+	const getLatchedSpeakersList = latchWhileDisconnected(() => speakersList);
+	const getLatchedCommentList = latchWhileDisconnected(() => commentList);
+	let latchedSpeakersList = $derived(getLatchedSpeakersList());
+	let latchedCommentList = $derived(getLatchedCommentList());
+
+	let currentSpeaker = $derived(latchedSpeakersList?.speakers.toSorted(compareSpeakers).at(0));
+	let currentQuestioner = $derived(latchedCommentList?.speakers.toSorted(compareSpeakers).at(0));
 
 	let speakerRepresentation = $derived(
 		currentSpeaker?.committeeMember?.representation ??
@@ -65,8 +86,8 @@
 			currentQuestioner?.conferenceMember?.representation
 	);
 
-	let speechRunning = $derived(!!speakersList?.startTimestamp);
-	let questionRunning = $derived(!!commentList?.startTimestamp);
+	let speechRunning = $derived(!!latchedSpeakersList?.startTimestamp);
+	let questionRunning = $derived(!!latchedCommentList?.startTimestamp);
 	let hasSpeaker = $derived(currentSpeaker != null);
 	let hasQuestioner = $derived(currentQuestioner != null);
 
@@ -81,7 +102,7 @@
 		| 'answer_stopped';
 
 	let widgetState = $derived.by((): WidgetState => {
-		const phase = speakersList?.phase ?? 'SPEECH';
+		const phase = latchedSpeakersList?.phase ?? 'SPEECH';
 		if (phase === 'SPEECH_DONE') return 'speech_stopped';
 		if (phase === 'ANSWER_DONE') return 'answer_stopped';
 		if (phase === 'SPEECH') return speechRunning ? 'speech_running' : 'speech_idle';
@@ -105,7 +126,7 @@
 			case 'answer_running':
 				return m.stopAnswer();
 			case 'answer_stopped':
-				return (commentList?.speakers.length ?? 0) > 1 ? m.nextQuestion() : m.nextSpeaker();
+				return (latchedCommentList?.speakers.length ?? 0) > 1 ? m.nextQuestion() : m.nextSpeaker();
 			case 'speech_idle':
 			default:
 				return m.startSpeech();
@@ -151,7 +172,7 @@
 	);
 
 	let activeTimerList = $derived(
-		speechRunning ? speakersList : questionRunning ? commentList : speakersList
+		speechRunning ? latchedSpeakersList : questionRunning ? latchedCommentList : latchedSpeakersList
 	);
 
 	let timeLeft = $derived.by(() => {
@@ -174,9 +195,13 @@
 	let overtime = $derived((timeLeft ?? 0) < 0);
 
 	const startSpeakersListTimer = async () => {
-		if (!speakersList) return;
+		if (!latchedSpeakersList) return;
 		await client.mutate.updateSpeakersList({
-			__args: { id: speakersList.id, startTimestamp: getServerTime().toDate(), phase: 'SPEECH' },
+			__args: {
+				id: latchedSpeakersList.id,
+				startTimestamp: getServerTime().toDate(),
+				phase: 'SPEECH'
+			},
 			id: true,
 			startTimestamp: true,
 			phase: true
@@ -184,9 +209,9 @@
 	};
 
 	const stopSpeakersListTimer = async () => {
-		if (!speakersList) return;
+		if (!latchedSpeakersList) return;
 		await client.mutate.updateSpeakersList({
-			__args: { id: speakersList.id, stopTimer: true, phase: 'SPEECH_DONE' },
+			__args: { id: latchedSpeakersList.id, stopTimer: true, phase: 'SPEECH_DONE' },
 			id: true,
 			timeLeft: true,
 			startTimestamp: true,
@@ -195,16 +220,16 @@
 	};
 
 	const startCommentListTimer = async () => {
-		if (!commentList || !speakersList) return;
+		if (!latchedCommentList || !latchedSpeakersList) return;
 		await Promise.all([
 			client.mutate.updateSpeakersList({
-				__args: { id: commentList.id, startTimestamp: getServerTime().toDate() },
+				__args: { id: latchedCommentList.id, startTimestamp: getServerTime().toDate() },
 				id: true,
 				startTimestamp: true,
 				phase: true
 			}),
 			client.mutate.updateSpeakersList({
-				__args: { id: speakersList.id, phase: 'QUESTION' },
+				__args: { id: latchedSpeakersList.id, phase: 'QUESTION' },
 				id: true,
 				phase: true
 			})
@@ -212,17 +237,17 @@
 	};
 
 	const stopCommentListTimer = async () => {
-		if (!commentList || !speakersList) return;
+		if (!latchedCommentList || !latchedSpeakersList) return;
 		await Promise.all([
 			client.mutate.updateSpeakersList({
-				__args: { id: commentList.id, stopTimer: true },
+				__args: { id: latchedCommentList.id, stopTimer: true },
 				id: true,
 				timeLeft: true,
 				startTimestamp: true,
 				phase: true
 			}),
 			client.mutate.updateSpeakersList({
-				__args: { id: speakersList.id, phase: 'ANSWER' },
+				__args: { id: latchedSpeakersList.id, phase: 'ANSWER' },
 				id: true,
 				phase: true
 			})
@@ -230,12 +255,12 @@
 	};
 
 	const startAnswerTimer = async () => {
-		if (!speakersList || !commentList) return;
+		if (!latchedSpeakersList || !latchedCommentList) return;
 		await Promise.all([
 			client.mutate.updateSpeakersList({
 				__args: {
-					id: speakersList.id,
-					timeLeft: commentList.speakingTime,
+					id: latchedSpeakersList.id,
+					timeLeft: latchedCommentList.speakingTime,
 					startTimestamp: getServerTime().toDate(),
 					phase: 'ANSWER'
 				},
@@ -245,7 +270,7 @@
 				phase: true
 			}),
 			client.mutate.updateSpeakersList({
-				__args: { id: commentList.id, stopTimer: true },
+				__args: { id: latchedCommentList.id, stopTimer: true },
 				id: true,
 				timeLeft: true,
 				startTimestamp: true,
@@ -255,7 +280,7 @@
 	};
 
 	const advanceToNextSpeaker = async () => {
-		if (!speakersList || !currentSpeaker) return;
+		if (!latchedSpeakersList || !currentSpeaker) return;
 		const promises: Promise<unknown>[] = [
 			client.mutate.removeSpeakerOnList({
 				__args: { speakerOnListId: currentSpeaker.id },
@@ -264,8 +289,8 @@
 			}),
 			client.mutate.updateSpeakersList({
 				__args: {
-					id: speakersList.id,
-					timeLeft: speakersList.speakingTime,
+					id: latchedSpeakersList.id,
+					timeLeft: latchedSpeakersList.speakingTime,
 					stopTimer: true,
 					phase: 'SPEECH'
 				},
@@ -275,12 +300,12 @@
 				phase: true
 			})
 		];
-		if (commentList) {
+		if (latchedCommentList) {
 			promises.push(
 				client.mutate.updateSpeakersList({
 					__args: {
-						id: commentList.id,
-						timeLeft: commentList.speakingTime,
+						id: latchedCommentList.id,
+						timeLeft: latchedCommentList.speakingTime,
 						stopTimer: true,
 						isClosed: false
 					},
@@ -291,7 +316,7 @@
 					phase: true
 				}),
 				client.mutate.clearSpeakersList({
-					__args: { id: commentList.id },
+					__args: { id: latchedCommentList.id },
 					id: true,
 					speakers: { id: true, position: true }
 				})
@@ -301,7 +326,7 @@
 	};
 
 	const advanceQuestioner = async () => {
-		if (!commentList || !currentQuestioner || !speakersList) return;
+		if (!latchedCommentList || !currentQuestioner || !latchedSpeakersList) return;
 		await Promise.all([
 			client.mutate.removeSpeakerOnList({
 				__args: { speakerOnListId: currentQuestioner.id },
@@ -309,14 +334,18 @@
 				speakers: { id: true, position: true }
 			}),
 			client.mutate.updateSpeakersList({
-				__args: { id: commentList.id, timeLeft: commentList.speakingTime, stopTimer: true },
+				__args: {
+					id: latchedCommentList.id,
+					timeLeft: latchedCommentList.speakingTime,
+					stopTimer: true
+				},
 				id: true,
 				timeLeft: true,
 				startTimestamp: true,
 				phase: true
 			}),
 			client.mutate.updateSpeakersList({
-				__args: { id: speakersList.id, phase: 'QUESTION' },
+				__args: { id: latchedSpeakersList.id, phase: 'QUESTION' },
 				id: true,
 				phase: true
 			})
@@ -332,7 +361,7 @@
 				await stopSpeakersListTimer();
 				break;
 			case 'speech_stopped':
-				if ((commentList?.speakers.length ?? 0) > 0) {
+				if ((latchedCommentList?.speakers.length ?? 0) > 0) {
 					await startCommentListTimer();
 				} else {
 					await advanceToNextSpeaker();
@@ -350,8 +379,8 @@
 			case 'answer_running':
 				await client.mutate.updateSpeakersList({
 					__args: {
-						id: speakersList!.id,
-						timeLeft: speakersList!.speakingTime,
+						id: latchedSpeakersList!.id,
+						timeLeft: latchedSpeakersList!.speakingTime,
 						stopTimer: true,
 						phase: 'ANSWER_DONE'
 					},
@@ -362,7 +391,7 @@
 				});
 				break;
 			case 'answer_stopped':
-				if ((commentList?.speakers.length ?? 0) > 1) {
+				if ((latchedCommentList?.speakers.length ?? 0) > 1) {
 					await advanceQuestioner();
 				} else {
 					await advanceToNextSpeaker();
@@ -382,6 +411,44 @@
 		);
 	};
 
+	const getName = (member: MemberLike | undefined) =>
+		member?.representation?.name
+			? member?.representation.name
+			: getTranslatedCountryNameFromAlpha3Code(member?.representation?.alpha3Code);
+
+	const membersOnList = $derived(
+		new Set(
+			(latchedSpeakersList?.speakers ?? [])
+				.concat(latchedCommentList?.speakers ?? [])
+				.flatMap((s) => [s.committeeMember?.id, s.conferenceMember?.id].filter(Boolean))
+		)
+	);
+
+	let availableMembers = $derived(
+		[...committeeMembers, ...conferenceMembers].filter((m) => !membersOnList.has(m.id))
+	);
+
+	let addPopoverOpen = $state(false);
+
+	const addSpeaker = async (member: MemberLike) => {
+		if (!latchedSpeakersList?.id) return;
+		await toast.promise(
+			client.mutate.addSpeakerOnList({
+				__args: {
+					id: nanoid(),
+					committeeMemberId: member.present === false ? undefined : member.id,
+					conferenceMemberId: member.present === false ? member.id : undefined,
+					speakersListId: latchedSpeakersList.id
+				},
+				id: true,
+				position: true,
+				speakersListId: true
+			}),
+			promiseToastStrings(getName(member), 'add')
+		);
+		addPopoverOpen = false;
+	};
+
 	$effect(() => {
 		const handler = (event: KeyboardEvent) => {
 			event.preventDefault();
@@ -395,7 +462,6 @@
 
 {#if hasSpeaker}
 	<div class="flex items-center gap-3 px-2">
-		<!-- Speaker (left, fixed width) -->
 		<div
 			class="flex w-36 items-center justify-end gap-2 rounded-lg px-2 py-1 transition-all duration-300 {speechRunning
 				? 'bg-success/15 shadow-[0_0_8px_2px_oklch(var(--su)/0.25)]'
@@ -407,7 +473,6 @@
 			<Flag representation={speakerRepresentation} size="xs" />
 		</div>
 
-		<!-- Timer + Button (center) -->
 		<div class="flex shrink-0 flex-col items-center gap-1">
 			<span class="font-mono text-sm {overtime ? 'text-error' : ''}">{timeFormatted}</span>
 			<button class="btn btn-xs {buttonClass} gap-1" onclick={handleButton}>
@@ -417,7 +482,6 @@
 			</button>
 		</div>
 
-		<!-- Questioner (right, fixed width) -->
 		<div
 			class="flex w-36 items-center gap-2 rounded-lg px-2 py-1 transition-all duration-300 {showQuestioner
 				? 'visible'
@@ -430,5 +494,79 @@
 				{speakerName(currentQuestioner)}
 			</span>
 		</div>
+
+		<Popover bind:open={addPopoverOpen}>
+			{#snippet Trigger({ props })}
+				<button
+					{...props}
+					class="btn btn-xs btn-square join-item btn-soft"
+					aria-label="Add speaker"
+					title="Add speaker"
+				>
+					<i class="fas fa-plus text-xs"></i>
+				</button>
+			{/snippet}
+			{#snippet Content()}
+				<div class="flex max-h-80 flex-col">
+					<div class="p-2 pb-0 text-sm font-bold opacity-70">Add to speakers list</div>
+					<div class="overflow-y-auto">
+						{#if availableMembers.length === 0}
+							<div class="p-3 text-sm opacity-60">No members available</div>
+						{:else}
+							{#each availableMembers as member (member.id)}
+								{@const rep = member.representation}
+								<button
+									class="flex w-full items-center gap-2 p-2 text-left transition-colors hover:bg-base-200"
+									onclick={() => addSpeaker(member)}
+								>
+									<Flag representation={rep ?? undefined} size="xs" />
+									<span class="flex-1 truncate text-sm">
+										{getName(member)}
+									</span>
+									{#if typeof member.present === 'boolean' && !member.present}
+										<i class="fa-duotone fa-user-xmark opacity-50"></i>
+									{/if}
+								</button>
+							{/each}
+						{/if}
+					</div>
+				</div>
+			{/snippet}
+		</Popover>
 	</div>
+{:else if latchedSpeakersList}
+	<Popover bind:open={addPopoverOpen}>
+		{#snippet Trigger({ props })}
+			<button {...props} class="btn btn-xs btn-soft" aria-label="Add speaker" title="Add speaker">
+				<i class="fas fa-plus text-xs"></i>
+				<span class="hidden sm:inline">Add Speaker</span>
+			</button>
+		{/snippet}
+		{#snippet Content()}
+			<div class="flex max-h-80 flex-col">
+				<div class="p-2 pb-0 text-sm font-bold opacity-70">Add to speakers list</div>
+				<div class="overflow-y-auto">
+					{#if availableMembers.length === 0}
+						<div class="p-3 text-sm opacity-60">No members available</div>
+					{:else}
+						{#each availableMembers as member (member.id)}
+							{@const rep = member.representation}
+							<button
+								class="flex w-full items-center gap-2 p-2 text-left transition-colors hover:bg-base-200"
+								onclick={() => addSpeaker(member)}
+							>
+								<Flag representation={rep ?? undefined} size="xs" />
+								<span class="flex-1 truncate text-sm">
+									{getName(member)}
+								</span>
+								{#if typeof member.present === 'boolean' && !member.present}
+									<i class="fa-duotone fa-user-xmark opacity-50"></i>
+								{/if}
+							</button>
+						{/each}
+					{/if}
+				</div>
+			</div>
+		{/snippet}
+	</Popover>
 {/if}

@@ -52,14 +52,35 @@
 		| null
 		| undefined;
 
+	type MemberLike = {
+		id: string;
+		present?: boolean;
+		representation?: {
+			name?: string | null;
+			alpha2Code?: string | null;
+			alpha3Code?: string | null;
+			faIcon?: string | null;
+			type?: string | null;
+		} | null;
+	};
+
 	interface Props {
 		title?: string;
 		conferenceTitle?: string | null;
 		speakersList?: SpeakersList;
 		commentList?: SpeakersList;
+		committeeMembers?: MemberLike[];
+		conferenceMembers?: MemberLike[];
 	}
 
-	let { title, conferenceTitle, speakersList, commentList }: Props = $props();
+	let {
+		title,
+		conferenceTitle,
+		speakersList,
+		commentList,
+		committeeMembers = [],
+		conferenceMembers = []
+	}: Props = $props();
 
 	const conferenceId = $derived(page.params.conferenceId!);
 	const committeeId = $derived(page.params.committeeId!);
@@ -156,7 +177,7 @@
 
 	{#if !page.route.id?.includes('speakers-list') && speakersList}
 		<div class="absolute left-1/2 -translate-x-1/2">
-			<NavbarSpeakersWidget {speakersList} {commentList} />
+			<NavbarSpeakersWidget {speakersList} {commentList} {committeeMembers} {conferenceMembers} />
 		</div>
 	{/if}
 

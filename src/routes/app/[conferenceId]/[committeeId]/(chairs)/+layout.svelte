@@ -307,6 +307,8 @@
 	conferenceTitle={committee?.conference?.title}
 	{speakersList}
 	{commentList}
+	committeeMembers={committee?.members ?? []}
+	conferenceMembers={committee?.conference?.uniqueConferenceMembers ?? []}
 />
 
 <div class="pb-16">

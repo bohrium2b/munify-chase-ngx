@@ -184,5 +184,6 @@ export function toAmendmentOverlays(rows: readonly AmendmentRow[]): AmendmentOve
 			sponsorCount: r.sponsors?.length ?? 0
 		});
 	}
+	console.log(overlays);
 	return overlays;
 }
