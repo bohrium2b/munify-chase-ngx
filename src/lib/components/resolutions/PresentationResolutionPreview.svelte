@@ -150,8 +150,7 @@
 
 	const overlays = $derived(showAmendments ? toAmendmentOverlays(amendmentRows) : undefined);
 	const rejectedClauseIds = $derived(
-		// (clauseVotes ?? []).filter((v) => v.vote?.outcome === 'REJECTED').map((v) => v.clauseId)
-		[]
+		(clauseVotes ?? []).filter((v) => v.vote?.outcome === 'REJECTED').map((v) => v.clauseId)
 	);
 
 	// ---- Header data (mirrors PaperPage.svelte) -----------------------------
