@@ -36,6 +36,7 @@
 	import SnapshotHistoryModal from './SnapshotHistoryModal.svelte';
 	import ShareCodePanel from './ShareCodePanel.svelte';
 	import SponsorPanel from './SponsorPanel.svelte';
+	import EditProposerSeconderModal from './EditProposerSeconderModal.svelte';
 	import {
 		canEditPaper,
 		isTeam,
@@ -113,6 +114,10 @@
 		committee: { id: true },
 		agendaItem: { title: true },
 		creatorCommitteeMember: {
+			id: true,
+			representation: { id: true, name: true, alpha3Code: true }
+		},
+		seconderCommitteeMember: {
 			id: true,
 			representation: { id: true, name: true, alpha3Code: true }
 		},
@@ -699,6 +704,7 @@
 	}
 	let submitting = $state(false);
 	let submitConfirmOpen = $state(false);
+	let proposerSeconderModalOpen = $state(false);
 
 	const isActiveDr = $derived(
 		committees?.[0]?.activeDraftResolutionId != null &&
@@ -804,6 +810,35 @@
 					</div>
 				{/if}
 				<div class="text-base-content/60 text-xs">{paper.agendaItem?.title ?? ''}</div>
+				<div class="flex flex-wrap items-center gap-1.5">
+					{#if paper.creatorCommitteeMember?.representation}
+						<span class="badge badge-ghost gap-1.5 text-xs">
+							<i class="fas fa-user text-[0.6rem]"></i>
+							{m.proposer()}:
+							{getTranslatedCountryNameFromAlpha3Code(
+								paper.creatorCommitteeMember.representation.alpha3Code
+							) ?? paper.creatorCommitteeMember.representation.name}
+						</span>
+					{/if}
+					{#if paper.seconderCommitteeMember?.representation}
+						<span class="badge badge-ghost gap-1.5 text-xs">
+							<i class="fas fa-user text-[0.6rem]"></i>
+							{m.seconder()}:
+							{getTranslatedCountryNameFromAlpha3Code(
+								paper.seconderCommitteeMember.representation.alpha3Code
+							) ?? paper.seconderCommitteeMember.representation.name}
+						</span>
+					{/if}
+					{#if team}
+						<button
+							class="btn btn-ghost btn-xs gap-1"
+							onclick={() => (proposerSeconderModalOpen = true)}
+							title={m.editProposerSeconder()}
+						>
+							<i class="fas fa-user-pen text-xs"></i>
+						</button>
+					{/if}
+				</div>
 			</div>
 
 			{#if team}
@@ -1279,6 +1314,16 @@
 			></button>
 		</div>
 	{/if}
+
+	<EditProposerSeconderModal
+		bind:open={proposerSeconderModalOpen}
+		close={() => (proposerSeconderModalOpen = false)}
+		kind="paper"
+		{paperId}
+		committeeId={committee.id}
+		currentProposerId={paper?.creatorCommitteeMember?.id ?? null}
+		currentSeconderId={paper?.seconderCommitteeMember?.id ?? null}
+	/>
 
 	<AiOnboardingModal
 		bind:open={aiOnboardingOpen}

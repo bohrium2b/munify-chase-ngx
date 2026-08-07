@@ -196,6 +196,8 @@ schemaBuilder.mutationFields((t) => ({
 			title: t.arg.string(),
 			status: t.arg({ type: statusEnum }),
 			documentNumber: t.arg.string(),
+			creatorCommitteeMemberId: t.arg.id(),
+			seconderCommitteeMemberId: t.arg.id(),
 			deployConfetti: t.arg.boolean()
 		},
 		resolve: async (query, _root, args, ctx) => {
@@ -204,7 +206,10 @@ schemaBuilder.mutationFields((t) => ({
 				.merge({ where: { id: args.id } });
 
 			const needsChairCheck =
-				args.documentNumber != null || (args.status != null && args.status !== 'SUBMITTED');
+				args.documentNumber != null ||
+				args.creatorCommitteeMemberId != null ||
+				args.seconderCommitteeMemberId != null ||
+				(args.status != null && args.status !== 'SUBMITTED');
 			const isChair = needsChairCheck
 				? !!(await db.query.resolutionPaper.findFirst({
 						where: {
@@ -217,11 +222,21 @@ schemaBuilder.mutationFields((t) => ({
 			if (args.documentNumber != null && !isChair) {
 				throw new GraphQLError('Only chairs may set the document number');
 			}
+			if (args.creatorCommitteeMemberId != null && !isChair) {
+				throw new GraphQLError('Only chairs may change the proposer');
+			}
+			if (args.seconderCommitteeMemberId != null && !isChair) {
+				throw new GraphQLError('Only chairs may change the seconder');
+			}
 
 			// Persist plain metadata first, so it is set before any submission flow
 			const metaUpdate: Partial<typeof schema.resolutionPaper.$inferInsert> = {};
 			if (args.title != null) metaUpdate.title = args.title;
 			if (args.documentNumber != null) metaUpdate.documentNumber = args.documentNumber;
+			if (args.creatorCommitteeMemberId != null)
+				metaUpdate.creatorCommitteeMemberId = args.creatorCommitteeMemberId;
+			if (args.seconderCommitteeMemberId != null)
+				metaUpdate.seconderCommitteeMemberId = args.seconderCommitteeMemberId;
 			if (Object.keys(metaUpdate).length > 0) {
 				await db.update(schema.resolutionPaper).set(metaUpdate).where(updateFilter.sql.where);
 			}

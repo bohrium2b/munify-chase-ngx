@@ -335,6 +335,11 @@ export const relations = defineRelations(schema, (r) => ({
 			to: r.committeeMember.id,
 			optional: false
 		}),
+		seconderCommitteeMember: r.one.committeeMember({
+			from: r.resolutionPaper.seconderCommitteeMemberId,
+			to: r.committeeMember.id,
+			optional: true
+		}),
 		snapshots: r.many.paperContentSnapshot({
 			from: r.resolutionPaper.id,
 			to: r.paperContentSnapshot.paperId

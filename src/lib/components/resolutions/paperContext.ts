@@ -141,6 +141,9 @@ export interface AmendmentRow {
 	proposer?: {
 		representation?: { name?: string | null; alpha2Code?: string | null } | null;
 	} | null;
+	seconder?: {
+		representation?: { name?: string | null; alpha2Code?: string | null } | null;
+	} | null;
 	sponsors?: { id: string }[];
 }
 

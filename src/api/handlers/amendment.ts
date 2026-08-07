@@ -397,5 +397,66 @@ schemaBuilder.mutationFields((t) => ({
 			}
 			return true;
 		}
+	}),
+
+	updateAmendment: t.drizzleField({
+		type: ref,
+		args: {
+			id: t.arg.id({ required: true }),
+			proposerCommitteeMemberId: t.arg.id(),
+			seconderCommitteeMemberId: t.arg.id()
+		},
+		resolve: async (query, _root, args, ctx) => {
+			const updateFilter = ctx.abilities.amendment
+				.filter('update')
+				.merge({ where: { id: args.id } });
+
+			const existing = await db.query.amendment
+				.findFirst(updateFilter.query.single)
+				.then(assertFindFirstExists);
+
+			const paper = await db.query.resolutionPaper
+				.findFirst({ where: { id: existing.paperId }, columns: { committeeId: true } })
+				.then(assertFindFirstExists);
+
+			const update: Partial<typeof schema.amendment.$inferInsert> = {};
+			if (args.proposerCommitteeMemberId != null) {
+				const member = await db.query.committeeMember
+					.findFirst({
+						where: {
+							id: args.proposerCommitteeMemberId,
+							committeeId: paper.committeeId
+						},
+						columns: { id: true }
+					})
+					.then(assertFindFirstExists);
+				update.proposerCommitteeMemberId = member.id;
+			}
+			if (args.seconderCommitteeMemberId != null) {
+				const member = await db.query.committeeMember
+					.findFirst({
+						where: {
+							id: args.seconderCommitteeMemberId,
+							committeeId: paper.committeeId
+						},
+						columns: { id: true }
+					})
+					.then(assertFindFirstExists);
+				update.seconderCommitteeMemberId = member.id;
+			}
+
+			if (Object.keys(update).length > 0) {
+				await db.update(schema.amendment).set(update).where(updateFilter.sql.where);
+				pubsub.updated(args.id);
+			}
+
+			return db.query.amendment
+				.findFirst(
+					query(
+						ctx.abilities.amendment.filter('read').merge({ where: { id: args.id } }).query.single
+					)
+				)
+				.then(assertFindFirstExists);
+		}
 	})
 }));

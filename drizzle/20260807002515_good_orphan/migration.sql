@@ -1,0 +1,4 @@
+ALTER TABLE "amendment" ADD COLUMN "seconder_committee_member_id" text;--> statement-breakpoint
+ALTER TABLE "resolution_paper" ADD COLUMN "seconder_committee_member_id" text;--> statement-breakpoint
+ALTER TABLE "amendment" ADD CONSTRAINT "amendment_seconder_committee_member_id_committee_member_id_fkey" FOREIGN KEY ("seconder_committee_member_id") REFERENCES "committee_member"("id") ON DELETE SET NULL;--> statement-breakpoint
+ALTER TABLE "resolution_paper" ADD CONSTRAINT "resolution_paper_y7V8dImjESUZ_fkey" FOREIGN KEY ("seconder_committee_member_id") REFERENCES "committee_member"("id") ON DELETE SET NULL;
